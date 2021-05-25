@@ -1,185 +1,266 @@
 import * as _ from "lodash";
+import * as fs from "fs";
 import moment from "../../../../modules/moment";
 import { UserService } from "../../../services/user.service";
 import { RedisService } from "../../../../cache/redis.service";
-import { OAuth2Client } from "google-auth-library";
 import { AuthService } from "../../../services/auth.service";
-
+import { IProfile, ValidateProfile } from "../../../models/profile.user.model";
+import { ErrorService } from "../../../services/error.service";
+import short from 'short-uuid';
+import { IUser, IUserCreateProfile, IUserEdit, IUserProfile, ValidateUser } from "../../../models/user.model";
+import { Cloudinary } from "../../../../constants/cloudinary";
+import { ConnectionService } from "../../../services/connection.service";
 export class User extends RedisService {
-    client;
     constructor() {
         super();
-        this.client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, "", "");
     }
     register(req, res) {
         try {
-            // NOT NEEDED FOR NOW 
-            // if (!moment(req.body.dob).olderThan13()) {
-            //     res.status(409).send({ success: false, msg: "Details do not meet the required age limit" })
-            //     return;
-            // }
-            let user_service_obj = new UserService()
-            user_service_obj.create(req.body).then(data => {
-                res.status(200).send(data);
-            }).catch((error) => {
-                if (error.errors && error.errors.email && error.errors.email.message == 'The specified email address is already in use.') {
-                    res.status(400).send({ msg: 'The specified email address is already in use.', success: false })
-                } else if (error.errors && error.errors.email && error.errors.email.message == "Path `email` is required.") {
-                    res.status(400).send({ msg: 'Email is required', success: false })
-                } else if (error.message == 'Invalid password') {
-                    res.status(400).send({ msg: 'Invalid password', success: false })
-                } else {
-                    res.status(500).send({ success: false, msg: error.msg });
+
+            let _profile = {
+                username: req.body.username.toString(),
+                name: req.body.name,
+                phoneNo: req.body.phoneNo,
+            }
+            delete req.body.username;
+            delete req.body.phoneNo;
+            delete req.body.name;
+            let user = req.body;
+            const myValidateProfile = new ValidateProfile();
+            myValidateProfile.validate(_profile, {
+                error: message => ErrorService.handler(res, 400, { success: false, msg: message, status: 400 }),
+                next: async (profile: IProfile) => {
+                    user.profile = { create: profile }
+                    const myUserService = new UserService();
+                    let data = await myUserService.create(user, profile)
+                    myUserService.sendCode(profile.phoneNo)
+                        .then(message => {
+                            // NEED TO DO PHONE NUMBER VERIFY HERE
+                            res.status(200).send({ success: true, user: data, msg: "Verification code sent to your phone number", status: 200 });
+                        }).catch((error) => {
+                            ErrorService.handler(res, 500, { success: false, msg: "There was an error in verifying SMS code", raw: error.message, status: 500 });
+                        })
                 }
             })
         } catch (error) {
-            res.status(500).send({ success: false, msg: error.message });
+            ErrorService.handler(res, 500, { success: false, msg: error.message, status: 500 });
         }
     }
 
-    //************************ LOGIN CONTROLLER ***********************//
+    social_register(req, res) {
+        let _profile = {
+            username: req.body.username != null ? req.body.username : `user-${short.generate()}`,
+            name: req.body.name,
+            phoneNo: req.body.phoneNo,
+            profileImage: req.body.profileImage
+        }
+        delete req.body.username;
+        delete req.body.phoneNo;
+        delete req.body.profileImage;
+        delete req.body.name;
+        const myUserService = new ValidateUser();
+        myUserService.validate(req.body, {
+            error: message => ErrorService.handler(res, 400, { success: false, msg: message, status: 400 }),
+            next: (user: IUserCreateProfile) => {
+                const myValidateProfile = new ValidateProfile();
+                myValidateProfile.validate(_profile, {
+                    error: message => ErrorService.handler(res, 400, { success: false, msg: message, status: 400 }),
+                    next: async (profile: IProfile) => {
+                        user.profile = { create: profile }
+                        const myUserService = new UserService();
+                        let data = await myUserService.create(user, profile)
+                        myUserService.sendCode(profile.phoneNo)
+                            .then(message => {
+                                // NEED TO DO PHONE NUMBER VERIFY HERE
+                                res.status(200).send({ success: true, user: data, msg: "Verification code sent to your phone number", status: 200 });
+                            }).catch((error) => {
+                                ErrorService.handler(res, 500, { success: false, msg: "There was an error in verifying SMS code", raw: error.message, status: 500 });
+                            })
+                    }
+                })
+            }
+        })
+    }
+
+    verify(req, res) {
+        try {
+            let { phoneNo, code, gcm_id, platform } = req.body
+            let myUserService = new UserService();
+            myUserService.checkCode(phoneNo, code)
+                .then(user => {
+                    let userValidationService = new ValidateUser();
+                    userValidationService.validateGCM(user, gcm_id, {
+                        error: message => ErrorService.handler(res, 400, { success: false, msg: message, status: 400 }),
+                        next: uniqueGCM => {
+                            let myAuthService = new AuthService();
+                            myAuthService.generateAuthToken(
+                                { id: user.id, role: user.role },
+                                async (token) => {
+                                    myUserService.redisSetUserData(token, moment(moment().add(48, "hours")).fromNow_seconds())
+                                    if (!uniqueGCM) {
+                                        let _user = await myUserService.findOneAndUpdate(
+                                            { id: user.id },
+                                            { gcm: { create: [{ id: gcm_id, platform }] } }
+                                        )
+                                        myUserService.redisUpdateUser(_user)
+                                        _user["access_token"] = token;
+                                        let success = {
+                                            success: true,
+                                            msg: "Logged in successfully",
+                                            user: _user,
+                                        };
+                                        res.status(200).send(success);
+                                        return;
+                                    } else {
+                                        let _user = _.clone(user);
+                                        myUserService.redisUpdateUser(_user)
+                                        _user["access_token"] = token;
+                                        let success = {
+                                            success: true,
+                                            msg: "Logged in successfully",
+                                            user: _user,
+                                        };
+                                        res.status(200).send(success);
+                                        return;
+                                    }
+                                })
+                        }
+                    })
+                }).catch(error => {
+                    ErrorService.handler(res, 500, { success: false, msg: "There was an error in verifying SMS code", raw: error.message, status: 500 });
+                })
+        } catch (error) {
+            ErrorService.handler(res, 500, { success: false, msg: error.message, status: 500 });
+        }
+    }
+
     login(req, res) {
         try {
-            let { email, password, type } = req.body;
-            console.log("🚀 ~ file: user.controller.ts ~ line 44 ~ User ~ login ~ req.body", req.body)
-            let user_service_obj = new UserService();
-            user_service_obj
-                .findOne({
-                    email,
-                    isDeleted: false,
-                })
-                .then((user: any = {}) => {
-                    console.log("🚀 ~ file: user.controller.ts ~ line 52 ~ User ~ .then ~ user", user)
+            let { username, phoneNo, role } = req.body;
+            let orQuery = []
+            if (username != null && username != "" && username != undefined) orQuery.push({ profile: { username } })
+            if (phoneNo != null && phoneNo != "" && phoneNo != undefined) orQuery.push({ profile: { phoneNo } })
+            let myUserService = new UserService();
+            myUserService.findOneAdmin({
+                blocked: false, role, OR: orQuery
+            })
+                .then(user => {
                     if (!user) {
-                        var errors = {
+                        ErrorService.handler(res, 400, {
                             success: false,
                             msg: "No user with this account exists!",
-                        };
-                        res.status(200).send(errors);
-                        return;
-                    }
-                    if (user.type != type) {
-                        var errors = {
-                            success: false,
-                            msg: "User type provided does not match",
-                        };
-                        res.status(400).send(errors);
-                        return;
-                    }
-                    user_service_obj
-                        .passwordCheck({ user, password })
-                        .then(() => {
-                            let auth_service_obj = new AuthService();
-                            auth_service_obj.generateAuthToken(
-                                { _id: user._id, type: user.type },
-                                (token) => {
-                                    super
-                                        .setUserStateToken(
-                                            token,
-                                            moment(moment().add(48, "hours")).fromNow_seconds()
-                                        )
-                                        .then(() => {
-                                            user = _.pick(user, [
-                                                "_id",
-                                                "type",
-                                                "profile_img",
-                                                "email",
-                                                "phoneNo",
-                                                "firstName",
-                                                "lastName",
-                                                "dob",
-                                                "address_1",
-                                                "address_2",
-                                                "country",
-                                                "city",
-                                                "state",
-                                                "postal_code",
-                                            ]);
-                                            user["access_token"] = token;
-                                            var success = {
-                                                success: true,
-                                                msg: "Logged in successfully",
-                                                user,
-                                            };
-                                            res.status(200).send(success);
-                                            return;
-                                        })
-                                        .catch((error) => {
-                                            res
-                                                .status(500)
-                                                .send({ success: false, msg: error.message });
-                                            return;
-                                        });
-                                }
-                            );
+                            status: 400
                         })
-                        .catch((errors) => {
-                            res
-                                .status(errors.status)
-                                .send({ success: false, msg: errors.msg });
-                            return;
-                        });
-                })
-                .catch((error) => {
-                    res.status(500).send({ success: false, msg: error.message });
-                });
+                    } else {
+                        // NEED TO DO PHONE NUMBER VERIFY HERE
+                        myUserService.sendCode(user.profile.phoneNo)
+                            .then(message => {
+                                res.status(200).send({ success: true, user, msg: "Verification code sent to your phone number", status: 200 });
+                            }).catch((error) => {
+                                ErrorService.handler(res, 500, { success: false, msg: "There was an error in verifying SMS code", raw: error.message, status: 500 });
+                            })
+                    }
+                }).catch(error => ErrorService.handler(res, 400, error))
         } catch (error) {
-            res.status(500).send({ success: false, msg: error.message });
+            ErrorService.handler(res, 500, { success: false, msg: error.message, status: 500 });
         }
     }
 
-    //************************ SOCIAL LOGIN ***************************//
-    // This needs to be moved to some place better and handled differently
-    socialLogin(req, res) {
-        //social login document
-        //https://spyna.medium.com/how-really-protect-your-rest-api-after-social-login-with-node-js-3617c336ebed
-
-        console.log(process.env.GOOGLE_CLIENT_ID, "process.env.GOOGLE_CLIENT_ID");
-        this.client
-            .verifyIdToken({
-                idToken: req.body.token,
-                audience: process.env.GOOGLE_CLIENT_ID,
-            })
-            .then((login) => {
-                console.log(
-                    "🚀 ~ file: user.controller.ts ~ line 52 ~ .then ~ login",
-                    login
-                );
-            })
-            .then((user) => {
-                console.log(
-                    "🚀 ~ file: user.controller.ts ~ line 67 ~ .then ~ user",
-                    user
-                );
-            })
-            .catch((err) => {
-                //throw an error if something gos wrong
-                console.log(
-                    "error while authenticating google user: " + JSON.stringify(err)
-                );
-            });
-        res.send("success");
+    async logout(req, res) {
+        try {
+            let success = await super.deleteUserStateToken(req.auth)
+            if (success) {
+                let myUserService = new UserService();
+                myUserService.findOneAndUpdate(
+                    { id: req.user.id },
+                    { gcm: { deleteMany: [{ id: req.body.gcm_id }] }, }
+                ).then((_user) => {
+                    myUserService.redisUpdateUser(_user)
+                    var success = {
+                        success: true,
+                        msg: "Logged out successfully",
+                    };
+                    res.status(200).send(success);
+                }).catch((error) => {
+                    res
+                        .status(500)
+                        .send({ success: false, msg: error.message });
+                    return;
+                });
+            }
+            return;
+        } catch (error) {
+            ErrorService.handler(res, 500, { success: false, msg: error.message, status: 500 });
+        }
     }
 
-    get(req, res) {
+    async get(req, res) {
         try {
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
-            let user_service_obj = new UserService();
-            user_service_obj
-                .find({}, limit, page)
-                .then(({ users, count }) => {
-                    res.send({
-                        success: true, users,
-                        page: page,
-                        pages: Math.ceil(count / limit),
-                    });
+            let { key, id } = req.query;
+            let myUserService = new UserService();
+            if (id != null && id != "" && id != undefined) {
+                let user = await myUserService.findOne({ id })
+                myUserService.redisUpdateUser(user);
+                res.send({
+                    success: true, user: user.profile
                 })
-                .catch((error) => {
-                    res.status(error.status).send(error);
+            } else {
+                let orQuery = [
+                    { email: { contains: key, mode: "insensitive", } },
+                    { profile: { username: { contains: key, mode: "insensitive", } } },
+                    { profile: { name: { contains: key, mode: "insensitive", } } }
+                ]
+                let { users, count } = await myUserService.findWithLimit({ blocked: false, role: "USER", OR: orQuery }, limit, page)
+                let user_profiles = users.map(x => x.profile)
+                users.map(user => myUserService.redisUpdateUser(user))
+                res.send({
+                    success: true, users: user_profiles,
+                    page: page,
+                    pages: Math.ceil(count / limit),
+                    count
                 });
+            }
         } catch (error) {
-            res.status(500).send({ success: false, msg: error.message });
+            ErrorService.handler(res, 500, { success: false, msg: error.message, status: 500 });
+        }
+    }
+
+    async update(req, res) {
+        try {
+            const { username, name, about } = JSON.parse(JSON.stringify(req.body));
+            const files = JSON.parse(JSON.stringify(req.files));
+            console.log(username, name, about)
+            let user: IUserEdit = {
+                profile: {
+                    update: {
+                        username,
+                        name,
+                        about,
+                    }
+                }
+            }
+            if (files.image != null) {
+                const file = files.image;
+                const image: any = async (path) => {
+                    const cloudinary = new Cloudinary()
+                    return await cloudinary.uploads(path, "image");
+                }
+                const { path } = file[0];
+                const imgURL = await image(path);
+                fs.unlink(path, () => { console.log(`Deleted ${path}`) });
+                user.profile.update["profileImage"] = imgURL.url;
+            }
+
+            const myUserService = new UserService();
+            let updatedUser = await myUserService.findOneAndUpdate({ id: req.user.id }, user)
+            myUserService.redisUpdateUser(updatedUser)
+            res.send({
+                success: true, user: updatedUser, msg: "User updated successfully"
+            });
+        } catch (error) {
+            ErrorService.handler(res, 500, { success: false, msg: error.message, status: 500 });
         }
     }
 }

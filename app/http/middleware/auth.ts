@@ -70,7 +70,7 @@ export class AuthenticationMiddleware extends RedisService {
                     super.getUserStateToken(req.auth).then(data => {
                         if (data == null) {
                             console.log("Compromised Token!")
-                            res.send({
+                            res.status(401).send({
                                 success: false,
                                 msg: "Access Denied. Compromised Authorized Token.",
                                 status: 401,
@@ -95,32 +95,16 @@ export class AuthenticationMiddleware extends RedisService {
             compose()
                 // Attach user to request
                 .use((req, res, next) => {
-                    let user_service_obj = new UserService();
-                    user_service_obj.findOne({ _id: req.user._id, isEmailVerified: true })
+                    let myUserService = new UserService();
+                    myUserService.findOne({ id: req.user.id, blocked: false })
                         .then(user => {
                             try {
                                 if (user == null) {
                                     res.status(401).send({
                                         success: false,
-                                        msg: "Unauthorized access due unverified email",
+                                        msg: "Your account access has been blocked.",
                                         status: 401,
                                     });
-                                    throw true;
-                                } else if (user.isDeleted == true) {
-                                    var errors = {
-                                        success: false,
-                                        status: 401,
-                                        msg: "Your account has been deleted. Contact admin",
-                                    };
-                                    res.status(401).send(errors);
-                                    throw true;
-                                } else if (user.isActive == false) {
-                                    var errors = {
-                                        success: false,
-                                        status: 401,
-                                        msg: "Your account has been suspended. Contact admin",
-                                    };
-                                    res.status(401).send(errors);
                                     throw true;
                                 } else {
                                     next();

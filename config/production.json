@@ -1,5 +1,8 @@
 {
-    "origin": "http://35.238.186.193:8080",
+    "origin": "https://prerec-beauty-app.herokuapp.com",
+    "front": "",
+    "fb-callback": "https://prerec-beauty-app.herokuapp.com/auth/facebook/callback",
+    "g-callback": "https://prerec-beauty-app.herokuapp.com/auth/google/callback", 
     "db": {
         "name": "production"
     }

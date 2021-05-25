@@ -1,29 +1,28 @@
 'use strict';
 const express = require("express");
+const session = require('express-session');
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const logger = require("morgan");
 const cors = require("cors");
-const multer = require("multer");
-const busboyBodyParser = require('busboy-body-parser');
-import * as fs from "fs";
+const passport = require('passport');
+const fs = require("fs")
+
 const globalAny: any = global;
 globalAny.ROOTPATH = __dirname;
 
 var app = express();
-var forms = multer()
-// const swaggerUi = require("swagger-ui-express"),
-//     swaggerDocument = require("./swagger.json");
-
-// Express TCP requests parsing
-app.use(bodyParser.json())
-app.use(busboyBodyParser({ limit: '5mb' }));
-app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cors());
 
-app.set("view engine", "ejs");
 
+app.set("view engine", "ejs");
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(express.static(__dirname + "views"));
+// Express TCP requests parsing
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser());
 
 // create a write stream (in append mode) for system logger
@@ -39,7 +38,13 @@ app.use('/cache', require('./app/cache'))
 app.use("/console", require('./routes/console'));
 
 app.use("/api", require("./routes/api"));
-// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-// require("./routes/web")(app);
+require("./routes/web")(app);
 
+passport.serializeUser(function (user, cb) {
+    cb(null, user);
+});
+
+passport.deserializeUser(function (obj, cb) {
+    cb(null, obj);
+});
 module.exports = app;

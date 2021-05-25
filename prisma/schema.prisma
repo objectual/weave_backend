@@ -1,0 +1,63 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+//*************** USER LEVEL ***************//
+model User {
+  id        String   @id @default(uuid())
+  email     String?  @unique
+  blocked   Boolean  @default(false)
+  gcm       GCM[]
+  role      Role     @default(USER) // One role
+  profile   Profile? // One profile (optional) 
+  images    Images[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GCM {
+  id       String  @unique
+  platform String
+  user     User?   @relation(fields: [userId], references: [id]) // One user (optional)
+  userId   String?
+}
+
+model Profile {
+  name                String
+  city                String
+  country             String
+  birthday            DateTime
+  birthYearVisibility Boolean  @default(true)
+  about               String
+  phoneNo             String   @unique
+  profileImage        String?  @default("https://easy-1-jq7udywfca-uc.a.run.app/public/images/user.png")
+  locationRange       Int      @default(10) // Noted in KM
+  locationVisibility  Boolean  @default(true)
+  user                User     @relation(fields: [userId], references: [id]) // Belongs to user
+  userId              String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@id([userId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+//*************** IMAGES LEVEL ***************//
+model Images {
+  id           String   @id @default(uuid())
+  cloudinaryId String
+  path         String
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

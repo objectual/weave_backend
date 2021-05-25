@@ -9,6 +9,7 @@ app.get("/health", function (req, res) {
     origin: config.get('origin'),
     environment: process.env.NODE_ENV,
     port: process.env.PORT,
+    sql_db: process.env.DATABASE_URL,
     m_db_cluster: process.env.MONGO_CLUSTER,
     m_db_name: config.get('db.name'),
     r_host: process.env.REDIS_HOST,

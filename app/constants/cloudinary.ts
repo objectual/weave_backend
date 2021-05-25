@@ -1,9 +1,7 @@
+require('dotenv').config();
 const cloudinary = require('cloudinary');
-const dotenv = require('dotenv');
 const { reject } = require('lodash');
-
-dotenv.config();
-
+ 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -13,17 +11,18 @@ cloudinary.config({
 
 export class Cloudinary {
 
-    uploads(file, name) {
+    uploads(file, name){
         return new Promise((resolve, reject) => {
             try {
-                cloudinary.uploader.upload(file, (result) => {
+                cloudinary.uploader.unsigned_upload(file, "jtc7fsxa", {
+                    unique_filename: false,
+                    public_id: name,
+                    resource_type: "raw",
+                }).then(function (result,error) {
                     resolve({
                         url: result.url,
                         id: result.public_id
                     })
-                }, {
-                    resource_type: "auto",
-                    folder: name
                 })
             } catch (error) {
                 console.log(error)
