@@ -100,33 +100,4 @@ export class ValidationMiddleware extends Validator {
                 })
         )
     }
-
-    validateConnectionFollow() {
-        return (
-            compose()
-                .use((req, res, next) => {
-                    super.validateConnectionFollowData(req.body)
-                        .then(data => {
-                            req.body.userId = req.user.id;
-                            next();
-                        }).catch(error => {
-                            console.log(error)
-                            var errors = {
-                                success: false,
-                                msg: error.details[0].message,
-                                data: error.name,
-                            };
-                            res.status(400).send(errors);
-                            return;
-                        })
-                })
-                .use((req, res, next) => {
-                    if (req.body.userId == req.body.followId) {
-                        res.status(409).send({ success: false, msg: "Not allowed to perform this action" })
-                    }else{
-                        next();
-                    }
-                })
-        )
-    }
 }

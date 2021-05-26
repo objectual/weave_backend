@@ -1,13 +1,13 @@
 "use strict";
 import { PrismaClient } from '@prisma/client' 
-import { IProfile } from './profile.user.model'; 
+import { IProfile, IProfileCreate, IProfileEdit } from './profile.user.model'; 
 export interface IUser {
     id?: string;
     email?: string;
     role?: Role;
-    gcm: Array<GCM>;
-    createdAt: Date;
-    updatedAt: Date;
+    gcm?: Array<GCM>;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export enum Role {
@@ -24,16 +24,15 @@ interface GCM {
 export interface IUserEdit {
     email?: string;
     blocked?: boolean;
-    profile?: { update: IProfile };
+    profile?: { update: IProfileEdit };
 }
 
 export interface IUserProfile extends IUser {
     profile: IProfile;
-    // posts: IPosts
 }
 
 export interface IUserCreateProfile extends IUser {
-    profile: { create: IProfile }
+    profile: { create: IProfileCreate }
 }
 
 export class ValidateUser {

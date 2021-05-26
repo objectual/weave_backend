@@ -1,7 +1,7 @@
 "use strict";
 import { PrismaClient } from '@prisma/client';
 import { IUser, IUserCreateProfile, IUserProfile } from "../models/user.model";
-import { IProfile } from '../models/profile.user.model';
+import { IProfile, IProfileCreate } from '../models/profile.user.model';
 import { RedisService } from '../../cache/redis.service';
 
 const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_ACCOUNT_TOKEN);
@@ -40,7 +40,7 @@ export class UserService extends RedisService {
         return JSON.parse(JSON.stringify(_user, (_, v) => typeof v === 'bigint' ? `${v}n` : v)
             .replace(/"(-?\d+)n"/g, (_, a) => a))
     }
-    create(_user: IUserCreateProfile, _profile: IProfile): Promise<IUser> {
+    create(_user: IUserCreateProfile, _profile: IProfileCreate): Promise<IUser> {
         return new Promise((resolve, reject) => {
             this.prisma.user
                 .create({
@@ -153,7 +153,8 @@ export class UserService extends RedisService {
                             // SEND AUTH 
                             this.findOne({ profile: { phoneNo } })
                                 .then(user => {
-                                    resolve(user)
+                                    if (user == null) resolve(null);
+                                    resolve(user);
                                 })
                                 .catch(error => reject(error))
                         } else {
@@ -167,11 +168,11 @@ export class UserService extends RedisService {
         })
     }
 
-    async redisSetUserData(auth:string, exp:number){
+    async redisSetUserData(auth: string, exp: number) {
         await super.setUserStateToken(auth, exp);
     }
 
     async redisUpdateUser(_user: IUserProfile) {
-        await super.setData(_user.profile, `${_user.profile.username}|${_user.profile.name}|${_user.profile.phoneNo}|${_user.profile.userId}|user`, 0).catch((error) => { throw error })
+        await super.setData(_user.profile, `${_user.profile.name}|${_user.profile.phoneNo}|${_user.profile.userId}|user`, 0).catch((error) => { throw error })
     }
 }

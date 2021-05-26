@@ -28,13 +28,13 @@ model GCM {
 }
 
 model Profile {
-  name                String
-  city                String
-  country             String
-  birthday            DateTime
-  birthYearVisibility Boolean  @default(true)
-  about               String
   phoneNo             String   @unique
+  name                String?
+  city                String?
+  country             String?
+  birthday            DateTime?
+  birthYearVisibility Boolean  @default(true)
+  about               String?
   profileImage        String?  @default("https://easy-1-jq7udywfca-uc.a.run.app/public/images/user.png")
   locationRange       Int      @default(10) // Noted in KM
   locationVisibility  Boolean  @default(true)

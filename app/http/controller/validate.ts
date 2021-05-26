@@ -2,7 +2,6 @@
 
 import { IUser, Role } from "../models/user.model";
 import * as Joi from "joi";
-import { IFollows } from "../models/follow.user.model";
 interface UserRegister extends IUser {
     email: string;
     password: string;
@@ -28,10 +27,6 @@ interface UserUpdate extends IUser {
     username: string;
     name: string;
     about: string;
-}
-
-interface ConnectionFollow extends IFollows { 
-    followId: string;
 }
 export class Validator {
     constructor() { }
@@ -62,8 +57,7 @@ export class Validator {
     //************************ VALIDATE USER LOGIN DATA ***********************//
     validateLoginData(data: UserLogin) {
         const schema = Joi.object().keys({
-            username: Joi.string(),
-            phoneNo: Joi.string(),
+            phoneNo: Joi.string().required(),
             role: Joi.string().required(),
         });
         return Joi.validate(data, schema);
@@ -87,14 +81,6 @@ export class Validator {
             username: Joi.string(),
             name: Joi.string(),
             about: Joi.string(),
-        });
-        return Joi.validate(data, schema);
-    }
-
-    //************************ VALIDATE ADMIN USER UPDATE DATA ***********************//
-    validateConnectionFollowData(data: ConnectionFollow) {
-        const schema = Joi.object().keys({ 
-            followId:Joi.string().required()
         });
         return Joi.validate(data, schema);
     }

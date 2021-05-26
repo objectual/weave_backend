@@ -14,13 +14,13 @@ let cache_controller = new CacheMiddleware()
 let auth_controller = new AuthenticationMiddleware()
 let role_controller = new RoleMiddleware()
 
-userRouter.post('/', auth_controller.isAuthenticated(), role_controller.isUser(), validation_controller.validateUserUpdate(), upload.fields([{ name: "image" }]), user_controller.update);
+// userRouter.post('/', auth_controller.isAuthenticated(), role_controller.isUser(), validation_controller.validateUserUpdate(), upload.fields([{ name: "image" }]), user_controller.update);
 
 userRouter.get('/', cache_controller.userSearch(), user_controller.get)
 
-userRouter.post('/register', validation_controller.validateUserRegistration(), user_controller.register);
+// userRouter.post('/register', validation_controller.validateUserRegistration(), user_controller.register);
 
-userRouter.post('/social/register', validation_controller.validateUserRegistration(), user_controller.social_register);
+// userRouter.post('/social/register', validation_controller.validateUserRegistration(), user_controller.social_register);
 
 userRouter.post('/login', validation_controller.validateUserLogin(), user_controller.login);
 

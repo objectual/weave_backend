@@ -2,16 +2,35 @@
 import { PrismaClient } from '@prisma/client'
 import { IUser } from './user.model';
 export interface IProfile {
-    username: string;
+    phoneNo: string;
     name: string;
+    birthday: Date;
+    birthYearVisibility: Boolean;
+    city?: string;
+    country?: string;
     about?: string;
-    phoneNo?: string;
-    userId?: IUser["id"];
     profileImage?: string;
-    followers?: number; 
-    following?: number; 
+    userId?: IUser["id"];
+    locationRange: Number;
+    locationVisibility: Boolean;
     createdAt?: Date;
     updatedAt?: Date;
+}
+
+export interface IProfileCreate {
+    phoneNo: string;
+}
+
+export interface IProfileEdit {
+    name?: string;
+    about?: string;
+    phoneNo?: string;
+    birthday?: Date;
+    birthYearVisibility?: Boolean;
+    locationRange?: Number;
+    locationVisibility?: Boolean;
+    city?: string;
+    country?: string;
 }
 
 export class ValidateProfile {
@@ -19,14 +38,10 @@ export class ValidateProfile {
     constructor() {
         this.prisma = new PrismaClient();
     }
-    public async validate(_profile: IProfile, { error, next }) {
+    public async validate(_profile: IProfileCreate, { error, next }) {
         try {
-            let validUsername = await this.username(_profile.username)
-            if (validUsername != "") return error(validUsername)
-            if (_profile.phoneNo != null) {
-                let validPhone = await this.phoneNo(_profile.phoneNo)
-                if (validPhone != "") return error(validPhone)
-            }
+            let validPhone = await this.phoneNo(_profile.phoneNo)
+            if (validPhone != "") return error(validPhone)
             return next(_profile);
         } catch (e) {
             return error(e.message);
@@ -38,21 +53,6 @@ export class ValidateProfile {
                 .then(profile => {
                     if (profile) {
                         return resolve("The specified phone number is already in use.");
-                    }
-                    return resolve("");
-                }).catch(function (e) {
-                    return reject(e.message);
-                }).finally(() => {
-                    this.prisma.$disconnect();
-                })
-        })
-    }
-    private username(username: string): Promise<string> {
-        return new Promise((resolve, reject) => {
-            this.prisma.profile.findUnique({ where: { username } })
-                .then(profile => {
-                    if (profile) {
-                        return resolve("The specified username is already in use.");
                     }
                     return resolve("");
                 }).catch(function (e) {
