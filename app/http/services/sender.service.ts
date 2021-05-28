@@ -11,6 +11,7 @@ export interface SuccessObject {
     status: number;
     msg?: string;
     data?: any;
+    raw?:any;
     message?: string;
     pages?: number;
     page?: number;
@@ -19,12 +20,12 @@ export interface SuccessObject {
 
 export class SenderService {
     public static errorSend(res: any, data: ErrorObject) {
-        console.error(data)
+        console.error("ERROR",data)
         return res.status(data.status).send(data);
     }
 
     public static send(res: any, data: SuccessObject) {
-        console.info(data)
+        console.info("SENDING",data)
         return res.status(200).send(data);
     }
 }

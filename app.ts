@@ -2,24 +2,48 @@
 const express = require("express");
 const session = require('express-session');
 const path = require("path");
-const cookieParser = require("cookie-parser");
-const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser"); 
 const logger = require("morgan");
 const cors = require("cors");
 const passport = require('passport');
-const fs = require("fs")
+const fs = require("fs") 
 
-const globalAny: any = global;
-globalAny.ROOTPATH = __dirname;
+const RedisStore = require('connect-redis')(session)
+import { RedisService } from './app/cache/redis.service';
+const redis = require("redis")
 
 var app = express();
 app.use(cors());
 
+if (process.env.NODE_ENV == "production") {
+    app.use(session({
+        store: new RedisStore({ client:  redis.createClient() }),
+        secret: process.env.PASSPHRASE,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: true, // if true only transmit cookie over https
+            httpOnly: true, // if true prevent client side JS from reading the cookie 
+            maxAge: 48 * 60 * 60 * 1000 // 48 hours session max age in miliseconds
+        }
+    }))
+} else {
+    app.use(session({
+        store: new RedisStore({ client: redis.createClient()  }),
+        secret: process.env.PASSPHRASE,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: false, // if true only transmit cookie over https
+            httpOnly: false, // if true prevent client side JS from reading the cookie 
+            maxAge: 48 * 60 * 60 * 1000 // 48 hours session max age in miliseconds
+        }
+    }))
+}
 
-app.set("view engine", "ejs");
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(express.static(__dirname + "views"));
+
 // Express TCP requests parsing
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))

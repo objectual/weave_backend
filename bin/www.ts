@@ -10,10 +10,7 @@ const prisma = new PrismaClient()
 import http from 'http';
 import moment from 'moment';
 import fs from 'fs';
-import { Spinner } from 'cli-spinner';
 
-import { RedisService } from '../app/cache/redis.service';
-let redis = new RedisService()
 /**
  * Get port from environment and store in Express.
  */
@@ -30,7 +27,6 @@ var server = http.createServer(app);
  */
 server.listen(port, function () {
     connectDatabase();
-    connectRedis();
     console.info(`✔️ Server Started (listening on PORT : ${port})`);
     console.info(`⌚`, moment().format("DD-MM-YYYY hh:mm:ss a"));
 });
@@ -41,17 +37,6 @@ async function connectDatabase() {
         await prisma.$connect()
         prisma.$disconnect()
         console.info(`✔️ Database Safely Connected with (${process.env.DATABASE_URL})`);
-    } catch (err) {
-        console.info(`⌚`, moment().format("DD-MM-YYYY hh:mm:ss a"));
-        console.error("❗️ Could not connect to database...", err);
-        server.close();
-        process.exit();
-    }
-}
-async function connectRedis() {
-    try {
-        await redis.connect_cache()
-        console.info("✔️ Redis Cache Connected");
     } catch (err) {
         console.info(`⌚`, moment().format("DD-MM-YYYY hh:mm:ss a"));
         console.error("❗️ Could not connect to database...", err);

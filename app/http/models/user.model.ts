@@ -1,10 +1,11 @@
 "use strict";
-import { PrismaClient } from '@prisma/client' 
-import { IProfile, IProfileCreate, IProfileEdit } from './profile.user.model'; 
+import { PrismaClient } from '@prisma/client'
+import { IProfile, IProfileCreate, IProfileEdit } from './profile.user.model';
 export interface IUser {
     id?: string;
     email?: string;
     role?: Role;
+    blocked?: boolean;
     gcm?: Array<GCM>;
     createdAt?: Date;
     updatedAt?: Date;
@@ -63,7 +64,6 @@ export class ValidateUser {
         return new Promise((resolve, reject) => {
             this.prisma.gCM.findFirst({ where: { id: gcm } })
                 .then(async gcmFound => {
-                    console.log(gcmFound)
                     if (gcmFound != null) {
                         if (gcmFound.userId == user) {
                             // already assigned to this user
@@ -73,11 +73,11 @@ export class ValidateUser {
                             await this.updateGCM(gcmFound.id, user)
                             return resolve(true) // User owns this GCM now
                         }
-                    } else if (gcmFound == null) { 
+                    } else if (gcmFound == null) {
                         return resolve(false);
                     }
                 })
-                .catch(function (e) { 
+                .catch(function (e) {
                     return reject(e.message);
                 }).finally(() => {
                     this.prisma.$disconnect();

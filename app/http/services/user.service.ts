@@ -12,9 +12,10 @@ const select = {
     blocked: true,
     role: true,
     gcm: true,
+    profile: true,
+    images: true,
     createdAt: true,
     updatedAt: true,
-    profile: true
 };
 
 const loginSelect = {
@@ -173,6 +174,6 @@ export class UserService extends RedisService {
     }
 
     async redisUpdateUser(_user: IUserProfile) {
-        await super.setData(_user.profile, `${_user.profile.name}|${_user.profile.phoneNo}|${_user.profile.userId}|user`, 0).catch((error) => { throw error })
+        await super.setData(_user.profile, `${_user.profile.phoneNo}|${_user.profile.userId}|user`, 0).catch((error) => { throw error })
     }
 }

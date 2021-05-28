@@ -17,12 +17,8 @@ export class RedisService {
                 }
             }
             client = createClient(origin);
-            client.on("error", function (err) {
-                reject(err);
-            });
-            client.on("connect", function () {
-                resolve("Redis Connected");
-            });
+            console.info("✔️ Redis Cache Connected");
+            resolve(client);
         });
     };
     protected setUserStateToken(auth: string, exp: number) {
@@ -75,7 +71,7 @@ export class RedisService {
                             try {
                                 this.getData(`${key}`).then(data => {
                                     if (data !== null) {
-                                        this.getData(`${key}|analytics|search`).then(analytic => { 
+                                        this.getData(`${key}|analytics|search`).then(analytic => {
                                             data["trend"] = analytic !== null ? _.toInteger(analytic) : 0;
                                             resolve(data);
                                         })
@@ -100,7 +96,7 @@ export class RedisService {
         return new Promise((resolve, reject) => {
             try {
                 if (exp == 0) {
-                    client.setex(`${key}`, 172800, JSON.stringify(data)); //2 day record
+                    client.setex(`${key}`, 48 * 60 * 60 * 1000, JSON.stringify(data)); //2 day record
                 } else {
                     client.setex(`${key}`, exp, JSON.stringify(data));
                 }

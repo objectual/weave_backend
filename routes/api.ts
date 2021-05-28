@@ -4,6 +4,8 @@ import { userAdminRouter } from "../app/http/controller/api/user/admin";
 const app = expess();
 
 
+app.use("/auth", userRouter); 
+
 app.use("/users", userRouter); 
 
 app.use("/users/admin", userAdminRouter); 

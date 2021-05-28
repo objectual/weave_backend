@@ -23,6 +23,7 @@
     "composable-middleware": "^0.3.0",
     "concurrently": "^5.3.0",
     "config": "^3.3.3",
+    "connect-redis": "^5.2.0",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
