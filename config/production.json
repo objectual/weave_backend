@@ -1,8 +1,8 @@
 {
-    "origin": "https://prerec-beauty-app.herokuapp.com",
+    "origin": "https://iweave.herokuapp.com",
     "front": "",
-    "fb-callback": "https://prerec-beauty-app.herokuapp.com/auth/facebook/callback",
-    "g-callback": "https://prerec-beauty-app.herokuapp.com/auth/google/callback", 
+    "fb-callback": "https://iweave.herokuapp.com/auth/facebook/callback",
+    "g-callback": "https://iweave.herokuapp.com/auth/google/callback", 
     "db": {
         "name": "production"
     }

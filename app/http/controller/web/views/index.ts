@@ -18,4 +18,4 @@ viewsRouter.get('/', views_controller.index);
 
 // viewsRouter.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/error' }), views_controller.social_callback);
 
-viewsRouter.get('/*', views_controller.not_found);
+viewsRouter.get('/*', views_controller.not_found); // Whole world is a 404 - AhmedBaig

@@ -68,12 +68,13 @@ export class Authentication extends RedisService {
                                 success: true,
                                 msg: "User created and logged in successfully",
                                 data: user,
-                                status: 200,
+                                status: 201,
                                 raw: { existing: false }
                             }
                             if (existing) {
                                 myUserService.redisUpdateUser(user)
                                 success.msg = "Logged in successfully"
+                                success.status = 200
                                 success.raw = { existing: true }
                             }
                             SenderService.send(res, success);

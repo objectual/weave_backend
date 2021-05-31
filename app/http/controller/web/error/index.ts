@@ -4,7 +4,9 @@ export const errorRouter = express.Router();
 import { Error } from './error.controller';
 let error_controller = new Error()
 
-errorRouter.get('/', function (req, res) { res.send("Error Logging In") });
+errorRouter.get('/401', error_controller.unauthorized );
+
+errorRouter.get('/403', error_controller.forbidden );
 
 errorRouter.get('/404', error_controller.not_found_page);
 

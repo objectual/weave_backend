@@ -5,22 +5,25 @@ const redisScan = require('node-redis-scan');
 let client: any;
 let scanner: any;
 export class RedisService {
-    connect_cache() {
-        console.log("❗ Connecting to Redis...")
-        return new Promise((resolve, reject) => {
-            let origin = {}
-            if (process.env.NODE_ENV == "production") {
-                origin = {
-                    port: process.env.REDIS_PORT, // replace with your port
-                    host: process.env.REDIS_HOST, // replace with your hostanme or IP address
-                    password: process.env.REDIS_PASS, // replace with your password
-                }
+    connectCache(): any {
+        // console.log("❗ Service Connecting to Redis...")
+        let origin = {}
+        if (process.env.NODE_ENV == "production") {
+            origin = {
+                port: process.env.REDIS_PORT, // replace with your port
+                host: process.env.REDIS_HOST, // replace with your hostanme or IP address
+                password: process.env.REDIS_PASS, // replace with your password
             }
-            client = createClient(origin);
-            console.info("✔️ Redis Cache Connected");
-            resolve(client);
-        });
+        }
+        return createClient(origin);
     };
+    constructor() {
+        client = this.connectCache()
+        // console.info(`✔️ Service Connected to Redis`);
+        client.on("error", function (error) {
+            console.error("❗ ", error);
+        });
+    }
     protected setUserStateToken(auth: string, exp: number) {
         return new Promise((resolve, reject) => {
             try {

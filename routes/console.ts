@@ -1,6 +1,7 @@
 import express from "express";
 const app = express();
 import * as appRoot from 'app-root-path'
+import { BrowserMiddleware } from "../app/http/middleware/browser";
 const config = require('config')
 const path = require("path");
 
@@ -20,9 +21,7 @@ app.get("/health", function (req, res) {
   });
 });
 
-app.get("/logs", function (req, res) {
-  let filePath = ".." + "\\" + "access.log";
-  console.log();
+app.get("/logs", BrowserMiddleware.restrictedBrowser(), function (req, res) {
   res.sendFile(path.join(appRoot.path, 'access.log'));
 });
 

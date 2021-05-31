@@ -27,8 +27,8 @@ var server = http.createServer(app);
  */
 server.listen(port, function () {
     connectDatabase();
-    console.info(`✔️ Server Started (listening on PORT : ${port})`);
     console.info(`⌚`, moment().format("DD-MM-YYYY hh:mm:ss a"));
+    console.info(`✔️ Server Started (listening on PORT : ${port})`);
 });
 
 // run inside `async` function
@@ -71,7 +71,7 @@ function terminate(server, options = { coredump: false, timeout: 500 }) {
     return (code, reason) => (err, promise) => {
         if (err && err instanceof Error) {
             // Log error information, use a proper logging library here :)
-            fs.appendFileSync("access.log", err.message);
+            fs.appendFileSync("access.log", `⌚ ${ moment().format("DD-MM-YYYY hh:mm:ss a")} ${err.message} \n`);
             console.log(err.message, err.stack);
         }
 
@@ -92,13 +92,13 @@ function exitHandler(options, exitCode) {
 }
 
 process.on("uncaughtException", (err) => {
-    fs.appendFile("access.log", `Uncaught Exception: ${err.message}`, () => { });
+    fs.appendFile("access.log", `⌚ ${ moment().format("DD-MM-YYYY hh:mm:ss a")} Uncaught Exception: ${err.message} \n`, () => { });
     console.log(`Uncaught Exception: ${err.message}`);
 });
 process.on("unhandledRejection", (reason, promise) => {
     fs.appendFile(
         "access.log",
-        `Unhandled rejection, reason: ${reason}`,
+        `⌚ ${ moment().format("DD-MM-YYYY hh:mm:ss a")} Unhandled rejection, reason: ${reason} \n`,
         () => { }
     );
     console.log("Unhandled rejection at", promise, `reason: ${reason}`);
