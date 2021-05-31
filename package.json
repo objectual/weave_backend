@@ -32,6 +32,7 @@
     "express-async-errors": "^3.1.1",
     "express-rate-limit": "^5.2.6",
     "express-session": "^1.17.1",
+    "express-slow-down": "^1.4.0",
     "extends-classes": "^1.0.5",
     "fs": "^0.0.1-security",
     "google-auth-library": "^7.0.2",
@@ -50,10 +51,10 @@
     "passport": "^0.4.1",
     "passport-facebook": "^3.0.0",
     "passport-google-oauth": "^2.0.0",
+    "rate-limit-redis": "^2.1.0",
     "redis": "^3.0.2",
     "short-uuid": "^4.1.0",
     "twilio": "^3.61.0",
-    "winston": "^3.3.3",
     "yarn": "^1.22.10"
   },
   "devDependencies": {

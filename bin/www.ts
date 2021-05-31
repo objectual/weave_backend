@@ -5,17 +5,29 @@
  */
 require('dotenv').config()
 var app = require("../app")
+const config = require("config");
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 import http from 'http';
 import moment from 'moment';
 import fs from 'fs';
-
 /**
  * Get port from environment and store in Express.
  */
 var port = normalizePort(process.env.PORT || "3000");
 app.set("port", port);
+
+
+// production error handler
+// no stacktraces leaked to user
+app.use(function (err, req, res, next) {
+    fs.appendFile("access.log", `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} Uncaught Exception: ${err.stack} \n`, () => { });
+    if (process.env.NODE_ENV == "production") {
+        res.status(500).redirect(`${config.get("origin")}/error/500?err=Something went wrong!`)
+    } else {
+        res.status(500).redirect(`${config.get("origin")}/error/500?err=${err.message}`)
+    }
+});
 
 /**
  * Create HTTP server.
@@ -71,7 +83,7 @@ function terminate(server, options = { coredump: false, timeout: 500 }) {
     return (code, reason) => (err, promise) => {
         if (err && err instanceof Error) {
             // Log error information, use a proper logging library here :)
-            fs.appendFileSync("access.log", `⌚ ${ moment().format("DD-MM-YYYY hh:mm:ss a")} ${err.message} \n`);
+            fs.appendFileSync("access.log", `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} ${err.message} \n`);
             console.log(err.message, err.stack);
         }
 
@@ -92,13 +104,13 @@ function exitHandler(options, exitCode) {
 }
 
 process.on("uncaughtException", (err) => {
-    fs.appendFile("access.log", `⌚ ${ moment().format("DD-MM-YYYY hh:mm:ss a")} Uncaught Exception: ${err.message} \n`, () => { });
+    fs.appendFile("access.log", `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} Uncaught Exception: ${err.message} \n`, () => { });
     console.log(`Uncaught Exception: ${err.message}`);
 });
 process.on("unhandledRejection", (reason, promise) => {
     fs.appendFile(
         "access.log",
-        `⌚ ${ moment().format("DD-MM-YYYY hh:mm:ss a")} Unhandled rejection, reason: ${reason} \n`,
+        `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} Unhandled rejection, reason: ${reason} \n`,
         () => { }
     );
     console.log("Unhandled rejection at", promise, `reason: ${reason}`);

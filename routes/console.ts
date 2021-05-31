@@ -5,7 +5,7 @@ import { BrowserMiddleware } from "../app/http/middleware/browser";
 const config = require('config')
 const path = require("path");
 
-app.get("/health", function (req, res) {
+app.get("/health", BrowserMiddleware.restrictedBrowser(),function (req, res) {
   console.log({
     origin: config.get('origin'),
     environment: process.env.NODE_ENV,
