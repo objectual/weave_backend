@@ -83,7 +83,7 @@ function terminate(server, options = { coredump: false, timeout: 500 }) {
     return (code, reason) => (err, promise) => {
         if (err && err instanceof Error) {
             // Log error information, use a proper logging library here :)
-            fs.appendFileSync("access.log", `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} ${err.message} \n`);
+            fs.appendFileSync("access.log", `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} ${err.stack} \n`);
             console.log(err.message, err.stack);
         }
 
@@ -104,8 +104,8 @@ function exitHandler(options, exitCode) {
 }
 
 process.on("uncaughtException", (err) => {
-    fs.appendFile("access.log", `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} Uncaught Exception: ${err.message} \n`, () => { });
-    console.log(`Uncaught Exception: ${err.message}`);
+    fs.appendFile("access.log", `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} Uncaught Exception: ${err.stack} \n`, () => { });
+    console.log(`Uncaught Exception: ${err}`);
 });
 process.on("unhandledRejection", (reason, promise) => {
     fs.appendFile(
