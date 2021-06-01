@@ -7,6 +7,7 @@ import passport from "../../../middleware/passport";
 
 viewsRouter.get('/', views_controller.index);
 
+
 // viewsRouter.get('/login', views_controller.login);
 
 // viewsRouter.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));

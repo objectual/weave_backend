@@ -4,7 +4,6 @@ export class Views {
     index(req, res) {
         res.render(path.join(appRoot.path, "views/pages/welcome.ejs"));
     };
-
     login(req, res) {
         res.render(path.join(appRoot.path, "views/pages/login.ejs"));
     };

@@ -15,5 +15,5 @@ let auth_controller = new AuthenticationMiddleware()
 let role_controller = new RoleMiddleware()
 
 // userRouter.post('/', auth_controller.isAuthenticated(), role_controller.isUser(), validation_controller.validateUserUpdate(), upload.fields([{ name: "image" }]), user_controller.update);
-// 
+//  Uploader.fields([{ name: "img" }])
 userRouter.get('/', cache_controller.userSearch(), user_controller.get)

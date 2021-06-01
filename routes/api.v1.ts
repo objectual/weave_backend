@@ -1,6 +1,6 @@
 import express from "express";
-import { userRouter } from "../app/http/controller/api/user";
-import { userAdminRouter } from "../app/http/controller/api/user/admin";
+import { userRouter } from "../app/http/controller/api.v1/user";
+import { userAdminRouter } from "../app/http/controller/api.v1/user/admin";
 import { BrowserMiddleware } from "../app/http/middleware/browser";
 const app = express();
 

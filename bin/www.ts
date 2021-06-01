@@ -11,6 +11,8 @@ const prisma = new PrismaClient()
 import http from 'http';
 import moment from 'moment';
 import fs from 'fs';
+import path from "path";
+import appRoot from "app-root-path";
 /**
  * Get port from environment and store in Express.
  */
@@ -23,9 +25,9 @@ app.set("port", port);
 app.use(function (err, req, res, next) {
     fs.appendFile("access.log", `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} Uncaught Exception: ${err.stack} \n`, () => { });
     if (process.env.NODE_ENV == "production") {
-        res.status(500).redirect(`${config.get("origin")}/error/500?err=Something went wrong!`)
+        res.status(500).render(path.join(appRoot.path, "views/error/500.ejs"), { error: "Something went wrong!" })
     } else {
-        res.status(500).redirect(`${config.get("origin")}/error/500?err=${err.message}`)
+        res.status(500).render(path.join(appRoot.path, "views/error/500.ejs"), { error: err.message })
     }
 });
 

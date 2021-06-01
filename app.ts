@@ -58,11 +58,11 @@ app.set("view engine", "ejs");
 const slD = new slowDown({ 
     prefix: "slowDown",
     windowMs: 5 * 60 * 1000, //how long to keep records of requests in memory.
-    delayAfter: 100,
+    delayAfter: 4,
     delayMs: 500, // begin adding 500ms of delay per request above 100:
 });
 const rtL = new RateLimit({
-    max: 500,
+    max: 2,
     prefix: "rateLimit",
     skipFailedRequests: false, // Do not count failed requests (status >= 400)
     skipSuccessfulRequests: false, // Do not count successful requests (status < 400)
@@ -72,17 +72,23 @@ const rtL = new RateLimit({
     handler: function (req, res /*, next*/) {
         // res.status(429).send({ success: false, msg: "Too any requests, please try again later" })
         res.status(429).render(path.join(appRoot.path,"views/error/429.ejs"), { error: "" }); 
+        return;
     },
     onLimitReached: function (req, res, optionsUsed) {
         // res.status(429).send({ success: false, msg: "Going a little too fast. Your IP has been blocked for a minute" })
         res.status(429).render(path.join(appRoot.path,"views/error/429.ejs"), { error: "Going a little too fast. Your IP has been blocked for 5 mins" });
+        return;
     }
 });
 // Route definitions
 app.use('/cache', slD, rtL, require('./app/cache'))
 app.use("/console", slD, rtL, require('./routes/console'));
 app.use("/api/v1", slD, rtL, require("./routes/api.v1"));
-
+app.post('/reset-limit', function(req, res){
+    slD.resetKey(req.ip)
+    rtL.resetKey(req.ip)
+    res.send("Key Reset")
+});
 require("./routes/web")(app);
 
 passport.serializeUser(function (user, cb) {
