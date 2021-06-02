@@ -65,9 +65,16 @@ export class Validator {
     //************************ VALIDATE USER UPDATE DATA ***********************//
     validateUserUpdateData(data: UserUpdate) {
         const schema = Joi.object().keys({
-            username: Joi.string(),
-            name: Joi.string(),
-            about: Joi.string(),
+            firstName: Joi.string(),
+            lastName: Joi.string(),
+            city: Joi.string(),
+            country: Joi.string(),
+            birthday: Joi.string(),
+            profileImage: Joi.string(),
+            birthYearVisibility: Joi.boolean(),
+            locationRange: Joi.number(),
+            locationVisibility: Joi.boolean(),
+            about: Joi.string().min(4).max(60),
         });
         return Joi.validate(data, schema);
     }

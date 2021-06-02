@@ -35,7 +35,7 @@ export class User extends RedisService {
                 users.map(user => myUserService.redisUpdateUser(user))
                 SenderService.send(res, {
                     success: true, data: user_profiles,
-                    raw:req.user,
+                    raw: req.user,
                     page: page,
                     pages: Math.ceil(count / limit),
                     count,
@@ -47,39 +47,41 @@ export class User extends RedisService {
         }
     }
 
-    // async update(req, res) {
-    //     try {
-    //         const { username, name, about } = JSON.parse(JSON.stringify(req.body));
-    //         const files = JSON.parse(JSON.stringify(req.files));
-    //         console.log(username, name, about)
-    //         let user: IUserEdit = {
-    //             profile: {
-    //                 update: { 
-    //                     name,
-    //                     about,
-    //                 }
-    //             }
-    //         }
-    //         if (files.image != null) {
-    //             const file = files.image;
-    //             const image: any = async (path) => {
-    //                 const cloudinary = new Cloudinary()
-    //                 return await cloudinary.uploads(path, "image");
-    //             }
-    //             const { path } = file[0];
-    //             const imgURL = await image(path);
-    //             fs.unlink(path, () => { console.log(`Deleted ${path}`) });
-    //             user.profile.update["profileImage"] = imgURL.url;
-    //         }
+    async update(req, res) {
+        try {
+            const { username, name, about } = JSON.parse(JSON.stringify(req.body));
+            console.log(username, name, about)
+            let user: IUserEdit = {
+                profile: {
+                    update: {
+                        name,
+                        about,
+                    }
+                }
+            }
 
-    //         const myUserService = new UserService();
-    //         let updatedUser = await myUserService.findOneAndUpdate({ id: req.user.id }, user)
-    //         myUserService.redisUpdateUser(updatedUser)
-    //         res.send({
-    //             success: true, user: updatedUser, msg: "User updated successfully"
-    //         });
-    //     } catch (error) {
-    //         ErrorService.handler(res, 500, { success: false, msg: error.message, status: 500 });
-    //     }
-    // }
+            const myUserService = new UserService();
+            let updatedUser = await myUserService.findOneAndUpdate({ id: req.user.id }, user)
+            myUserService.redisUpdateUser(updatedUser)
+            res.send({
+                success: true, user: updatedUser, msg: "User updated successfully"
+            });
+        } catch (error) {
+            SenderService.send(res, { success: false, msg: error.message, status: 500 });
+        }
+    }
+
+    async uploader(req, res) { 
+        const files = JSON.parse(JSON.stringify(req.files));
+        if (files.image != null) {
+            const file = files.image;
+            const image: any = async (path) => {
+                const cloudinary = new Cloudinary()
+                return await cloudinary.uploads(path, "image");
+            }
+            const { path } = file[0];
+            const imgURL = await image(path);
+            fs.unlink(path, () => { console.log(`Deleted ${path}`) });
+        }
+    }
 }

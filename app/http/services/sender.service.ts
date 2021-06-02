@@ -25,6 +25,6 @@ export class SenderService {
     }
 
     public static send(res: any, data: SuccessObject) { 
-        return res.status(200).send(data);
+        return res.status(data.status).send(data);
     }
 }

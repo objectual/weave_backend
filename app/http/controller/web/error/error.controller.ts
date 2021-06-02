@@ -1,5 +1,4 @@
 import path from "path";
-import * as Winston from "winston";
 import * as appRoot from 'app-root-path'
 export class Error {
     unauthorized(req, res) {

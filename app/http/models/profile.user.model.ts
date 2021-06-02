@@ -6,6 +6,7 @@ export interface IProfile {
     name: string;
     birthday: Date;
     birthYearVisibility: Boolean;
+    approved: Boolean;
     city?: string;
     country?: string;
     about?: string;

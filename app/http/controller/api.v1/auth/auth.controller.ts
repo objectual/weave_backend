@@ -14,8 +14,7 @@ export class Authentication extends RedisService {
     login(req, res) {
         try {
             let { phoneNo } = req.body;
-            let myUserService = new UserService();
-            // NEED TO DO PHONE NUMBER VERIFY HERE
+            const myUserService = new UserService();
             myUserService.sendCode(phoneNo)
                 .then(message => {
                     SenderService.send(res, { success: true, msg: "Verification code sent to your phone number", status: 200 });
@@ -27,32 +26,39 @@ export class Authentication extends RedisService {
         }
     }
 
-    verify(req, res) {
+    async verify(req, res) {
         try {
             let { phoneNo, code, gcm_id, platform } = req.body
-            let myUserService = new UserService();
-            myUserService.checkCode(phoneNo, code)
-                .then(user => {
+            const myUserService = new UserService();
+            const userValidationService = new ValidateUser();
+            const myValidateProfile = new ValidateProfile();
+            await myUserService.checkCode(phoneNo, code)
+                .then(async user => {
+                    console.log(user)
+                    let existing = false;
+                    let approved = false;
                     if (user == null) {
-                        const myValidateProfile = new ValidateProfile();
-                        myValidateProfile.validate({ phoneNo }, {
+                        await myValidateProfile.validate({ phoneNo }, {
                             error: message => SenderService.errorSend(res, { success: false, msg: message, status: 400 }),
                             next: async (profile: IProfileCreate) => {
                                 let _newUser = { profile: { create: profile } }
                                 const myUserService = new UserService();
-                                return { user: await myUserService.create(_newUser, profile), existing: false };
+                                user = await myUserService.create(_newUser, profile);
+                                existing = false;
+                                approved = false;
                             }
                         })
-                    } else if (user.blocked) {
-                        SenderService.errorSend(res, { success: false, msg: "There was an error logging in. Your account has been suspended", status: 409 });
-                        return;
-                    } else {
-                        return { user, existing: true };
-                    }
-                })
-                .then(({ user, existing }) => {
-                    let userValidationService = new ValidateUser();
-                    userValidationService.validateGCM(user, gcm_id, {
+                    } else if (user != null) {
+                        if (user.blocked) {
+                            SenderService.errorSend(res, { success: false, msg: "There was an error logging in. Your account has been suspended", status: 409 });
+                            return;
+                        } else if (!user.blocked && !user.profile.approved) {
+                            existing = true; approved = false
+                        } else if (!user.blocked && user.profile.approved) {
+                            existing = true; approved = true
+                        }
+                    } 
+                    await userValidationService.validateGCM(user, gcm_id, {
                         error: message => SenderService.errorSend(res, { success: false, msg: message, status: 400 }),
                         next: async uniqueGCM => {
                             let token = await AuthService.generateAuthToken({ id: user.id, role: user.role })
@@ -66,16 +72,20 @@ export class Authentication extends RedisService {
                             }
                             let success = {
                                 success: true,
-                                msg: "User created and logged in successfully",
+                                msg: "Logged in successfully. Please complete your profile.",
                                 data: user,
                                 status: 201,
-                                raw: { existing: false }
+                                raw: { existing: false, approved: false }
                             }
-                            if (existing) {
+                            if (existing && !approved) {
+                                success.status = 206
+                                success.raw = { existing: true, approved: false }
+                            }
+                            if (existing && approved) {
                                 myUserService.redisUpdateUser(user)
-                                success.msg = "Logged in successfully"
+                                success.msg = "Logged in successfully."
                                 success.status = 200
-                                success.raw = { existing: true }
+                                success.raw = { existing: true, approved: true }
                             }
                             SenderService.send(res, success);
                             return;
@@ -92,12 +102,11 @@ export class Authentication extends RedisService {
 
     async logout(req, res) {
         try {
-            let myUserService = new UserService();
+            const myUserService = new UserService()
             myUserService.findOneAndUpdate(
                 { id: req.user.id },
                 { gcm: { deleteMany: [{ id: req.body.gcm_id }] }, }
             ).then((_user) => {
-                myUserService.redisUpdateUser(_user)
                 req.session.cookie.maxAge = 10;
                 SenderService.send(res, { success: true, msg: "Logged out successfully", status: 200 });
             }).catch((error) => {
