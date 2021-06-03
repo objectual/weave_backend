@@ -17,8 +17,7 @@ export class AuthenticationMiddleware extends RedisService {
             compose()
                 // Attach user to request
                 .use((req, res, next) => {
-                    let token = req.session.auth;
-                    console.log(token)
+                    let token = req.session.auth; 
                     if (!token)
                         return SenderService.errorSend(res, {
                             success: false,
@@ -88,6 +87,7 @@ export class AuthenticationMiddleware extends RedisService {
                                     });
                                     throw true;
                                 } else {
+                                    req.user.data = user;
                                     next();
                                 }
                         });

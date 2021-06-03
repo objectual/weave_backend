@@ -17,6 +17,7 @@ const logger = require("morgan");
 
 const RedisStore = require('connect-redis')(session)
 import { RedisService } from './app/cache/redis.service';
+import { BrowserMiddleware } from './app/http/middleware/browser';
 const redisClient = new RedisService();
 
 var app = express();
@@ -38,7 +39,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Express TCP requests parsing
-app.use(busboyBodyParser({ limit: '10mb' }));
+app.use(busboyBodyParser({ limit: '10mb', multi:true }));
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser());
@@ -83,9 +84,9 @@ const rtL = new RateLimit({
     // }
 });
 // Route definitions
-app.use('/cache', slD, rtL, require('./app/cache'))
+app.use('/cache', slD, rtL, BrowserMiddleware.restrictedBrowser(), require('./app/cache'))
 app.use("/console", slD, rtL, require('./routes/console'));
-app.use("/api/v1", slD, rtL, require("./routes/api.v1"));
+app.use("/api/v1", slD, rtL, BrowserMiddleware.restrictedBrowser(), require("./routes/api.v1"));
 app.post('/reset-limit', function (req, res) {
     slD.resetKey(req.ip)
     rtL.resetKey(req.ip)

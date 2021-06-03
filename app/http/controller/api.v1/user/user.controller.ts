@@ -3,11 +3,8 @@ import * as fs from "fs";
 import moment from "../../../../modules/moment";
 import { UserService } from "../../../services/user.service";
 import { RedisService } from "../../../../cache/redis.service";
-import { AuthService } from "../../../services/auth.service";
-import { IProfile, IProfileCreate, ValidateProfile } from "../../../models/profile.user.model";
 import { SenderService } from "../../../services/sender.service";
-import short from 'short-uuid';
-import { IUser, IUserCreateProfile, IUserEdit, IUserProfile, ValidateUser } from "../../../models/user.model";
+import { IUserEdit } from "../../../models/user.model";
 import { Cloudinary } from "../../../../constants/cloudinary";
 export class User extends RedisService {
     constructor() {
@@ -25,12 +22,17 @@ export class User extends RedisService {
                 res.send({
                     success: true, user: user.profile
                 })
+                return;
             } else {
-                let orQuery = [
-                    { email: { contains: key, mode: "insensitive", } },
-                    { profile: { name: { contains: key, mode: "insensitive", } } }
-                ]
-                let { users, count } = await myUserService.findWithLimit({ blocked: false, role: "USER", OR: orQuery }, limit, page)
+                let query = { blocked: false, role: "USER", profile: { approved: true } }
+                if (key != null && key != "") {
+                    let orQuery = [
+                        { email: { contains: key, mode: "insensitive", } },
+                        { profile: { name: { contains: key, mode: "insensitive", } } }
+                    ]
+                    query['OR'] = orQuery;
+                }
+                let { users, count } = await myUserService.findWithLimit(query, limit, page)
                 let user_profiles = users.map(x => x.profile)
                 users.map(user => myUserService.redisUpdateUser(user))
                 SenderService.send(res, {
@@ -71,17 +73,18 @@ export class User extends RedisService {
         }
     }
 
-    async uploader(req, res) { 
-        const files = JSON.parse(JSON.stringify(req.files));
-        if (files.image != null) {
-            const file = files.image;
-            const image: any = async (path) => {
-                const cloudinary = new Cloudinary()
-                return await cloudinary.uploads(path, "image");
-            }
-            const { path } = file[0];
-            const imgURL = await image(path);
-            fs.unlink(path, () => { console.log(`Deleted ${path}`) });
-        }
+    async uploader(req, res) {
+        console.log("DONE", req.files)
+        // const files = JSON.parse(JSON.stringify(req.files));
+        // if (files.image != null) {
+        //     const file = files.image;
+        //     const image: any = async (path) => {
+        //         const cloudinary = new Cloudinary()
+        //         return await cloudinary.uploads(path, "image");
+        //     }
+        //     const { path } = file[0];
+        //     const imgURL = await image(path);
+        //     fs.unlink(path, () => { console.log(`Deleted ${path}`) });
+        // }
     }
 }

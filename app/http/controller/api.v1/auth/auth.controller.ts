@@ -33,8 +33,7 @@ export class Authentication extends RedisService {
             const userValidationService = new ValidateUser();
             const myValidateProfile = new ValidateProfile();
             await myUserService.checkCode(phoneNo, code)
-                .then(async user => {
-                    console.log(user)
+                .then(async user => { 
                     let existing = false;
                     let approved = false;
                     if (user == null) {

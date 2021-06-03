@@ -2,10 +2,12 @@ import express from "express";
 const app = express();
 import * as appRoot from 'app-root-path'
 import { BrowserMiddleware } from "../app/http/middleware/browser";
+import { AuthenticationMiddleware } from "../app/http/middleware/auth";
+const auth_controller = new AuthenticationMiddleware();
 const config = require('config')
 const path = require("path");
 
-app.get("/health", BrowserMiddleware.restrictedBrowser(),function (req, res) {
+app.get("/health", function (req, res) {
   console.log({
     origin: config.get('origin'),
     environment: process.env.NODE_ENV,
@@ -18,6 +20,13 @@ app.get("/health", BrowserMiddleware.restrictedBrowser(),function (req, res) {
   });
   res.json({
     success: true,
+  });
+});
+
+app.get("/session", BrowserMiddleware.restrictedBrowser(), auth_controller.isAuthenticated(), function (req:any, res) {
+  res.json({
+    success: true,
+    data: req.user
   });
 });
 

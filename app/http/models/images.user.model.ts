@@ -2,23 +2,17 @@
 import { PrismaClient } from '@prisma/client'
 import { IUser } from './user.model';
 export interface IImages {
-    phoneNo: string;
-    name: string;
-    birthday: Date;
-    birthYearVisibility: Boolean;
-    approved: Boolean;
-    city?: string;
-    country?: string;
-    about?: string;
-    profileImage?: string;
+    id?: string;
+    cloudinaryId: string;
+    path: string;
     userId?: IUser["id"];
     createdAt?: Date;
     updatedAt?: Date;
 }
 
 export class ValidateImages {
-    private prisma;
+    // private prisma;
     constructor() {
-        this.prisma = new PrismaClient();
+        // this.prisma = new PrismaClient();
     }
 }

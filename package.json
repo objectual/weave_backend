@@ -5,7 +5,7 @@
   "main": "./lib/bin/www",
   "scripts": {
     "start": "set NODE_ENV=production&&tsc&&node lib/bin/www",
-    "dev": "set NODE_ENV=development&&tsc&& concurrently --kill-others \"tsc -w\" \"nodemon ./lib/bin/www\"",
+    "dev": "set NODE_ENV=development&&tsc-watch --onSuccess \"nodemon ./lib/bin/www\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Ahmed Baig",
@@ -55,6 +55,7 @@
     "rate-limit-redis": "^2.1.0",
     "redis": "^3.0.2",
     "short-uuid": "^4.1.0",
+    "tsc-watch": "^4.4.0",
     "twilio": "^3.61.0",
     "yarn": "^1.22.10"
   },
