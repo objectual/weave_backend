@@ -54,6 +54,7 @@
     "passport-google-oauth": "^2.0.0",
     "rate-limit-redis": "^2.1.0",
     "redis": "^3.0.2",
+    "request": "^2.88.2",
     "short-uuid": "^4.1.0",
     "tsc-watch": "^4.4.0",
     "twilio": "^3.61.0",

@@ -1,5 +1,7 @@
 import compose from "composable-middleware"
 import { Validator } from "../controller/validate";
+import { ValidateImages } from "../models/images.user.model";
+import { SenderService } from "../services/sender.service";
 export class ValidationMiddleware extends Validator {
     constructor() {
         super();
@@ -16,8 +18,9 @@ export class ValidationMiddleware extends Validator {
                                 success: false,
                                 msg: error.details[0].message,
                                 data: error.name,
+                                status: 400
                             };
-                            res.status(400).send(errors);
+                            SenderService.errorSend(res, errors);
                             return;
                         });
                 })
@@ -35,8 +38,9 @@ export class ValidationMiddleware extends Validator {
                                 success: false,
                                 msg: error.details[0].message,
                                 data: error.name,
+                                status: 400
                             };
-                            res.status(400).send(errors);
+                            SenderService.errorSend(res, errors);
                             return;
                         });
                 })
@@ -54,8 +58,9 @@ export class ValidationMiddleware extends Validator {
                                 success: false,
                                 msg: error.details[0].message,
                                 data: error.name,
+                                status: 400
                             };
-                            res.status(400).send(errors);
+                            SenderService.errorSend(res, errors);
                             return;
                         })
                 })
@@ -73,8 +78,9 @@ export class ValidationMiddleware extends Validator {
                                 success: false,
                                 msg: error.details[0].message,
                                 data: error.name,
+                                status: 400
                             };
-                            res.status(400).send(errors);
+                            SenderService.errorSend(res, errors);
                             return;
                         })
                 })
@@ -93,10 +99,23 @@ export class ValidationMiddleware extends Validator {
                                 success: false,
                                 msg: error.details[0].message,
                                 data: error.name,
+                                status: 400
                             };
-                            res.status(400).send(errors);
+                            SenderService.errorSend(res, errors);
                             return;
                         })
+                })
+        )
+    }
+    validateUserImageCount() {
+        return (
+            compose()
+                .use((req, res, next) => {
+                    const validateImages = new ValidateImages();
+                    validateImages.validate(req.user.id, {
+                        error: (msg) => SenderService.errorSend(res, { success: false, status: 409, msg }),
+                        next: (count) => { req.body.alreadyUploaded = count; next() }
+                    })
                 })
         )
     }

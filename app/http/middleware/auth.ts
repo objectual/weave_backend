@@ -76,7 +76,7 @@ export class AuthenticationMiddleware extends RedisService {
                 // Attach user to request
                 .use((req, res, next) => {
                     let myUserService = new UserService();
-                    myUserService.findOne({ id: req.user.id, blocked: false })
+                    myUserService.findOneAdmin({ id: req.user.id, blocked: false })
                         .then(async user => {
                                 if (user == null) {
                                     await this.expireAuthToken(req, 10)

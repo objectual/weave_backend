@@ -6,6 +6,29 @@ import { RedisService } from '../../cache/redis.service';
 
 const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_ACCOUNT_TOKEN);
 
+const selectUser = {
+    id: true,
+    email: true,
+    role: true,
+    profile: {
+        select: {
+            phoneNo: true,
+            firstName: true,
+            lastName: true,
+            city: true,
+            country: true,
+            birthday: true,
+            birthYearVisibility: true,
+            about: true,
+            profileImage: true,
+            locationRange: true,
+            locationVisibility: true,
+        }
+    },
+    createdAt: true,
+    updatedAt: true,
+};
+
 const select = {
     id: true,
     email: true,
@@ -13,19 +36,8 @@ const select = {
     role: true,
     gcm: true,
     profile: true,
-    images: true,
     createdAt: true,
     updatedAt: true,
-};
-
-const loginSelect = {
-    id: true,
-    email: true,
-    role: true,
-    gcm: true,
-    createdAt: true,
-    updatedAt: true,
-    profile: true,
 };
 interface IFindResolver {
     users: IUserProfile[];
@@ -45,7 +57,7 @@ export class UserService extends RedisService {
         return new Promise((resolve, reject) => {
             this.prisma.user
                 .create({
-                    data: _user, select
+                    data: _user, select: selectUser
                 })
                 .then(_user => resolve(this.parseUserBigIntJSON(_user)))
                 .catch(error => reject(error))
@@ -85,7 +97,7 @@ export class UserService extends RedisService {
         return new Promise((resolve, reject) => {
             this.prisma.user
                 .findFirst({
-                    where, select: select
+                    where, select: selectUser
                 })
                 .then(_user => resolve(this.parseUserBigIntJSON(_user)))
                 .catch(error => reject(error))
@@ -96,17 +108,25 @@ export class UserService extends RedisService {
     findOneAdmin(where): Promise<IUserProfile> {
         return new Promise((resolve, reject) => {
             this.prisma.user
-                .findFirst({ where, select: loginSelect })
+                .findFirst({ where, select })
                 .then(_user => resolve(this.parseUserBigIntJSON(_user)))
                 .catch(error => reject(error))
                 .finally(() => this.prisma.$disconnect())
         });
     }
-
-    findOneAndUpdate(where, data, options = null): Promise<IUserProfile> {
+    findOneAndUpdateAdmin(where, data, options = null): Promise<IUserProfile> {
         return new Promise((resolve, reject) => {
             this.prisma.user
                 .update({ where, data, select })
+                .then(_user => resolve(this.parseUserBigIntJSON(_user)))
+                .catch(error => { reject(error) })
+                .finally(() => this.prisma.$disconnect())
+        });
+    }
+    findOneAndUpdate(where, data, options = null): Promise<IUserProfile> {
+        return new Promise((resolve, reject) => {
+            this.prisma.user
+                .update({ where, data, select: selectUser })
                 .then(_user => resolve(this.parseUserBigIntJSON(_user)))
                 .catch(error => { reject(error) })
                 .finally(() => this.prisma.$disconnect())
@@ -116,7 +136,7 @@ export class UserService extends RedisService {
     findAndUpdateMany(where, data): Promise<IFindResolver> {
         return new Promise((resolve, reject) => {
             this.prisma.user
-                .updateMany({ where, data, select })
+                .updateMany({ where, data, select: selectUser })
                 .then(async users => {
                     users = users.map(x => this.parseUserBigIntJSON(x))
                     const userCount = await this.prisma.user.count({ where })
@@ -153,7 +173,7 @@ export class UserService extends RedisService {
                         .then(async message => {
                             if (message.valid == true) {
                                 // SEND AUTH 
-                                this.findOne({ profile: { phoneNo } })
+                                this.findOneAdmin({ profile: { phoneNo } })
                                     .then(user => {
                                         if (user == null) resolve(null);
                                         resolve(user);
@@ -165,7 +185,7 @@ export class UserService extends RedisService {
                         })
                         .catch(error => { reject(error) })
                 } else {
-                    this.findOne({ profile: { phoneNo } })
+                    this.findOneAdmin({ profile: { phoneNo } })
                         .then(user => {
                             if (user == null) resolve(null);
                             resolve(user);

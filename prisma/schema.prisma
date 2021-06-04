@@ -55,11 +55,17 @@ enum Role {
 
 //*************** IMAGES LEVEL ***************//
 model Images {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
   cloudinaryId String
   path         String
-  user         User     @relation(fields: [userId], references: [id])
+  type         ImageTypes @default(USER)
+  user         User       @relation(fields: [userId], references: [id])
   userId       String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+enum ImageTypes {
+  USER
+  CHAT
 }

@@ -5,7 +5,8 @@ import { UserService } from "../../../services/user.service";
 import { RedisService } from "../../../../cache/redis.service";
 import { SenderService } from "../../../services/sender.service";
 import { IUserEdit } from "../../../models/user.model";
-import { Cloudinary } from "../../../../constants/cloudinary";
+import { Cloudinary, ICloudinaryUpload } from "../../../../constants/cloudinary";
+import { ImageService } from "../../../services/image.service";
 export class User extends RedisService {
     constructor() {
         super();
@@ -52,7 +53,6 @@ export class User extends RedisService {
     async update(req, res) {
         try {
             const { username, name, about } = JSON.parse(JSON.stringify(req.body));
-            console.log(username, name, about)
             let user: IUserEdit = {
                 profile: {
                     update: {
@@ -69,22 +69,62 @@ export class User extends RedisService {
                 success: true, user: updatedUser, msg: "User updated successfully"
             });
         } catch (error) {
-            SenderService.send(res, { success: false, msg: error.message, status: 500 });
+            SenderService.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
 
     async uploader(req, res) {
-        console.log("DONE", req.files)
-        // const files = JSON.parse(JSON.stringify(req.files));
-        // if (files.image != null) {
-        //     const file = files.image;
-        //     const image: any = async (path) => {
-        //         const cloudinary = new Cloudinary()
-        //         return await cloudinary.uploads(path, "image");
-        //     }
-        //     const { path } = file[0];
-        //     const imgURL = await image(path);
-        //     fs.unlink(path, () => { console.log(`Deleted ${path}`) });
-        // }
+        try {
+            let { files, alreadyUploaded } = req.body;
+            const image: any = async (path, name) => { // MINI Function
+                const cloudinary = new Cloudinary()
+                return await cloudinary.uploads(path, `${req.user.id}/${name}`);
+            }
+            if (files != null && files.length != 0) {
+                if (files.length > Math.abs(3 - alreadyUploaded)) {
+                    SenderService.errorSend(res, { success: false, status: 409, msg: `Your profile already has ${alreadyUploaded} images uploaded. Cannot upload more than ${Math.abs(3 - alreadyUploaded)} images on your profile` })
+                    files.map(file => {
+                        fs.unlink(file, () => { console.log(`Deleted ${file}`) });
+                    })
+                } else {
+                    let images: ICloudinaryUpload[] = await Promise.all(files.map(async file => {
+                        let pathSplit = file.split('\\')[2].split('.').slice(0, -1).join('.')
+                        const imgURL = await image(file, pathSplit);
+                        fs.unlink(file, () => { console.log(`Deleted ${file}`) });
+                        return imgURL;
+                    }))
+                    const imageService = new ImageService();
+                    SenderService.send(res, { success: true, data: await imageService.create(images.map(i => { return { cloudinaryId: i.id, path: i.path, userId: req.user.id } })), msg: "Images uploaded", status: 201 })
+                }
+            } else {
+                SenderService.errorSend(res, { success: false, status: 400, msg: "Files not found" })
+            }
+
+        } catch (error) {
+            SenderService.errorSend(res, { success: false, msg: error.message, status: 500 });
+        }
+    }
+
+    async getImages(req, res) {
+        try {
+            const imageService = new ImageService();
+            SenderService.send(res, { success: true, data: await imageService.find({ userId: req.params.id, type: "USER" }), status: 200 })
+        } catch (error) {
+            SenderService.errorSend(res, { success: false, msg: error.message, status: 500 });
+        }
+    }
+    async imageRemove(req, res) {
+        try {
+            const image: any = async (path) => { // MINI Function
+                const cloudinary = new Cloudinary()
+                return await cloudinary.remove(path);
+            }
+            const imageService = new ImageService();
+            const deletedImage = await imageService.findOne({ id: req.body.id, userId: req.user.id, type: "USER" })
+            const imgURL = await image(deletedImage.cloudinaryId);
+            SenderService.send(res, { success: true, msg: "Image deleted", data: await imageService.delete({ userId: req.user.id, type: "USER", id: req.body.id }), status: 200 })
+        } catch (error) { 
+            SenderService.errorSend(res, { success: false, msg: error.message, status: 500 });
+        }
     }
 }

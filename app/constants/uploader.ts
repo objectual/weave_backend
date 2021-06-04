@@ -1,6 +1,7 @@
 import compose from "composable-middleware"
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path'; 
+import { SenderService } from "../http/services/sender.service";
 
 // This implementation requires busboy-body-parser initialized in app
 interface IFields {
@@ -11,30 +12,32 @@ export class Uploader {
     public static fields(names: IFields[]) {
         return (
             compose()
-                .use((req, res, next) => { 
-                    names.forEach(o => Uploader.fileFilter(req.files[o.name], (error, status) => {
-                        if (!status) res.status(500).send({ success: false, msg: error })
-                        Uploader.fileStorage(req.files[o.name], (error, status) => {
-                            if (!status) res.status(500).send({ success: false, msg: error })
-                            next();
+                .use((req, res, next) => {
+                    if (req.files == null) { next(); } else {
+                        names.forEach(o => {
+                            if (req.files[o.name] != null) {
+                                Uploader.fileFilter(req.files[o.name], (error, status) => {
+                                    if (!status) SenderService.errorSend(res, { success: false, msg: error, status: 500 })
+                                    Uploader.fileStorage(req.files[o.name], (error, status, files) => {
+                                        if (!status) SenderService.errorSend(res, { success: false, msg: error, status: 500 })
+                                        req.body.files = files;
+                                        next();
+                                    })
+                                })
+                            }
                         })
-                    }))
+                    }
                 })
         )
     }
 
-    public static fileStorage(files, cb) {
-        files.forEach(file => {
+    public static async fileStorage(files, cb) {
+        let filePaths = await Promise.all(files.map(async file => {
             let filePath = path.join(Uploader.dest, `${new Date().toISOString().replace(/:/g, "-")}-${file.name}`);
-            fs.writeFile(filePath, file.data, function (err) {
-                if (err) {
-                    cb(err.message, false);
-                }
-                file['filePath'] = filePath;
-                console.log(file)
-            });
-        });
-        cb(null, true);
+            await fs.writeFileSync(filePath, file.data);
+            return filePath;
+        }))
+        cb(null, true, filePaths);
     }
 
     public static fileFilter(files, cb) {

@@ -69,6 +69,8 @@ export class Authentication extends RedisService {
                                     { gcm: { create: [{ id: gcm_id, platform }] } }
                                 )
                             }
+                            delete user.blocked;
+                            delete user.gcm;
                             let success = {
                                 success: true,
                                 msg: "Logged in successfully. Please complete your profile.",
