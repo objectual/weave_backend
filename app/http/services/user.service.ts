@@ -29,12 +29,13 @@ const selectUser = {
     updatedAt: true,
 };
 
-const select = {
+const select = { // ONLY USED FOR ADMIN
     id: true,
     email: true,
     blocked: true,
     role: true,
     gcm: true,
+    images: true,
     profile: true,
     createdAt: true,
     updatedAt: true,
@@ -83,6 +84,20 @@ export class UserService extends RedisService {
     findWithLimit(where, limit = null, page = null): Promise<IFindResolver> {
         return new Promise((resolve, reject) => {
             this.prisma.user
+                .findMany({ where, select: selectUser, skip: limit * (page - 1) ? limit * (page - 1) : 0, take: limit ? limit : 50 })
+                .then(async users => {
+                    users = users.map(x => this.parseUserBigIntJSON(x))
+                    const userCount = await this.prisma.user.count({ where })
+                    resolve({ users, count: userCount })
+                })
+                .catch(error => reject(error))
+                .finally(() => this.prisma.$disconnect())
+        });
+    }
+
+    findWithLimitAdmin(where, limit = null, page = null): Promise<IFindResolver> {
+        return new Promise((resolve, reject) => {
+            this.prisma.user
                 .findMany({ where, select, skip: limit * (page - 1) ? limit * (page - 1) : 0, take: limit ? limit : 50 })
                 .then(async users => {
                     users = users.map(x => this.parseUserBigIntJSON(x))
@@ -93,6 +108,7 @@ export class UserService extends RedisService {
                 .finally(() => this.prisma.$disconnect())
         });
     }
+
     findOne(where): Promise<IUserProfile> {
         return new Promise((resolve, reject) => {
             this.prisma.user
@@ -114,6 +130,7 @@ export class UserService extends RedisService {
                 .finally(() => this.prisma.$disconnect())
         });
     }
+
     findOneAndUpdateAdmin(where, data, options = null): Promise<IUserProfile> {
         return new Promise((resolve, reject) => {
             this.prisma.user
@@ -123,6 +140,7 @@ export class UserService extends RedisService {
                 .finally(() => this.prisma.$disconnect())
         });
     }
+
     findOneAndUpdate(where, data, options = null): Promise<IUserProfile> {
         return new Promise((resolve, reject) => {
             this.prisma.user
@@ -203,6 +221,6 @@ export class UserService extends RedisService {
     }
 
     async redisUpdateUser(_user: IUserProfile) {
-        await super.setData(_user.profile, `${_user.profile.phoneNo}|${_user.profile.userId}|user`, 0).catch((error) => { throw error })
+        await super.setData(_user.profile, `${_user.profile.phoneNo}|${_user.profile.firstName}|${_user.profile.lastName}|${_user.id}|user`, 0).catch((error) => { throw error })
     }
 }

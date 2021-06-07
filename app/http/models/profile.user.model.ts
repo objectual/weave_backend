@@ -3,7 +3,8 @@ import { PrismaClient } from '@prisma/client'
 import { IUser } from './user.model';
 export interface IProfile {
     phoneNo: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     birthday: Date;
     birthYearVisibility: Boolean;
     approved: Boolean;

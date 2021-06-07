@@ -1,6 +1,5 @@
 require('dotenv').config();
-const cloudinary = require('cloudinary').v2;
-import { reject } from 'lodash';
+const cloudinary = require('cloudinary').v2; 
 import config from "config";
 
 cloudinary.config({

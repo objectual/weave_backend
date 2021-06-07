@@ -66,15 +66,20 @@ export class RedisService {
     protected searchData(pattern: string): Promise<any[]> {
         return new Promise(async (resolve, reject) => {
             try {
+                console.log(pattern)
                 scanner = new redisScan(client)
                 scanner.scan(pattern, async (err, matchingKeys) => {
                     if (err) reject(err);
                     Promise.all(matchingKeys.map(key => {
+                        console.log(key)
                         return new Promise((resolve, reject) => {
                             try {
                                 this.getData(`${key}`).then(data => {
                                     if (data !== null) {
-                                        this.getData(`${key}|analytics|search`).then(analytic => {
+                                        // Get the ID from phone|first name|last name|id|user
+                                        let id = key.split("|")[3];
+                                        let type = key.split("|")[4];
+                                        this.getData(`${id}|${type}|analytics|search`).then(analytic => {
                                             data["trend"] = analytic !== null ? _.toInteger(analytic) : 0;
                                             resolve(data);
                                         })

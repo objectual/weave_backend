@@ -70,19 +70,35 @@ export class ValidationMiddleware extends Validator {
         return (
             compose()
                 .use((req, res, next) => {
-                    super.validateUserUpdateData(req.body)
-                        .then(data => {
-                            next();
-                        }).catch(error => {
-                            var errors = {
-                                success: false,
-                                msg: error.details[0].message,
-                                data: error.name,
-                                status: 400
-                            };
-                            SenderService.errorSend(res, errors);
-                            return;
-                        })
+                    if (req.user.data.profile.approved == false) {
+                        super.validateUserUpdateDataRequired(req.body)
+                            .then(data => {
+                                next();
+                            }).catch(error => {
+                                var errors = {
+                                    success: false,
+                                    msg: error.details[0].message,
+                                    data: error.name,
+                                    status: 400
+                                };
+                                SenderService.errorSend(res, errors);
+                                return;
+                            })
+                    } else {
+                        super.validateUserUpdateData(req.body)
+                            .then(data => {
+                                next();
+                            }).catch(error => {
+                                var errors = {
+                                    success: false,
+                                    msg: error.details[0].message,
+                                    data: error.name,
+                                    status: 400
+                                };
+                                SenderService.errorSend(res, errors);
+                                return;
+                            })
+                    }
                 })
         )
     }

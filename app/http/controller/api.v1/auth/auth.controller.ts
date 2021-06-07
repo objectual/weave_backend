@@ -69,7 +69,12 @@ export class Authentication extends RedisService {
                                     { gcm: { create: [{ id: gcm_id, platform }] } }
                                 )
                             }
+                            // Stuff I don't want to leave in redis
                             delete user.blocked;
+                            delete user.profile.approved;
+                            delete user.profile.userId;
+                            delete user.profile.createdAt;
+                            delete user.profile.updatedAt;
                             delete user.gcm;
                             let success = {
                                 success: true,

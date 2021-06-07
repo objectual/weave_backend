@@ -42,7 +42,7 @@ export class AuthenticationMiddleware extends RedisService {
                         if (decodedJWTHeader.alg != "RS256") {
                             SenderService.errorSend(res, {
                                 success: false,
-                                msg: "Access Denied. Compromised Authorized Token.",
+                                msg: "Access Denied. Please login again.",
                                 status: 401,
                             });
                             return;
@@ -53,7 +53,7 @@ export class AuthenticationMiddleware extends RedisService {
                         next();
                     } catch (ex) {
                         console.log("exception: " + ex);
-                        SenderService.errorSend(res, { success: false, msg: "Invalid token.", status: 400 });
+                        SenderService.errorSend(res, { success: false, msg: "Access Denied. Please login again", status: 400 });
                     }
                 })
                 .use(this.isValid())

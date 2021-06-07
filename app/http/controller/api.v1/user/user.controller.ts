@@ -29,7 +29,8 @@ export class User extends RedisService {
                 if (key != null && key != "") {
                     let orQuery = [
                         { email: { contains: key, mode: "insensitive", } },
-                        { profile: { name: { contains: key, mode: "insensitive", } } }
+                        { profile: { firstName: { contains: key, mode: "insensitive", } } },
+                        { profile: { lastName: { contains: key, mode: "insensitive", } } }
                     ]
                     query['OR'] = orQuery;
                 }
@@ -52,21 +53,33 @@ export class User extends RedisService {
 
     async update(req, res) {
         try {
-            const { username, name, about } = JSON.parse(JSON.stringify(req.body));
-            let user: IUserEdit = {
-                profile: {
-                    update: {
-                        name,
-                        about,
-                    }
+            let update = req.body;
+            if (req.body.birthday != null && req.body.birthday != "") {
+                if (!moment(req.body.birthday).olderThan14()) {
+                    SenderService.errorSend(res, { success: false, msg: "You must be older than 14 years to use the app", status: 400 });
+                    return;
+                } else {
+                    update['birthday'] = moment(req.body.birthday).format()
                 }
             }
-
+            update['city'] = update.city.toLowerCase();
+            update['country'] = update.country.toLowerCase();
+            let user: IUserEdit = {
+                profile: {
+                    update
+                }
+            }
             const myUserService = new UserService();
             let updatedUser = await myUserService.findOneAndUpdate({ id: req.user.id }, user)
-            myUserService.redisUpdateUser(updatedUser)
-            res.send({
-                success: true, user: updatedUser, msg: "User updated successfully"
+            if (req.user.data.profile.approved == false && updatedUser.profile.firstName != null && updatedUser.profile.lastName != null && updatedUser.profile.about != null && updatedUser.profile.profileImage != null) {
+                updatedUser = await myUserService.findOneAndUpdate({ id: req.user.id }, { profile: { update: { approved: true } } })
+                myUserService.redisUpdateUser(updatedUser) // this only works once because the profile is approved after registrations
+            }
+            if (req.user.data.profile.approved) {
+                myUserService.redisUpdateUser(updatedUser)
+            }
+            SenderService.send(res, {
+                status: 200, success: true, data: updatedUser, msg: "User updated successfully"
             });
         } catch (error) {
             SenderService.errorSend(res, { success: false, msg: error.message, status: 500 });
@@ -121,9 +134,9 @@ export class User extends RedisService {
             }
             const imageService = new ImageService();
             const deletedImage = await imageService.findOne({ id: req.body.id, userId: req.user.id, type: "USER" })
-            const imgURL = await image(deletedImage.cloudinaryId);
+            await image(deletedImage.cloudinaryId);
             SenderService.send(res, { success: true, msg: "Image deleted", data: await imageService.delete({ userId: req.user.id, type: "USER", id: req.body.id }), status: 200 })
-        } catch (error) { 
+        } catch (error) {
             SenderService.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }

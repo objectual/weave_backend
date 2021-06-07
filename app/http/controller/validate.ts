@@ -58,10 +58,11 @@ export class Validator {
     validateLoginData(data: UserLogin) {
         const schema = Joi.object().keys({
             phoneNo: Joi.string().required(),
-            role: Joi.string().required(),
+            // role: Joi.string().required(),
         });
         return Joi.validate(data, schema);
     }
+
     //************************ VALIDATE USER UPDATE DATA ***********************//
     validateUserUpdateData(data: UserUpdate) {
         const schema = Joi.object().keys({
@@ -75,6 +76,23 @@ export class Validator {
             locationRange: Joi.number(),
             locationVisibility: Joi.boolean(),
             about: Joi.string().min(4).max(60),
+        });
+        return Joi.validate(data, schema);
+    }
+    
+    //************************ VALIDATE USER UPDATE REQUIRED DATA ***********************//
+    validateUserUpdateDataRequired(data: UserUpdate) {
+        const schema = Joi.object().keys({
+            firstName: Joi.string().required(),
+            lastName: Joi.string().required(),
+            city: Joi.string().required(),
+            country: Joi.string().required(),
+            birthday: Joi.string().required(),
+            profileImage: Joi.string().required(),
+            birthYearVisibility: Joi.boolean(),
+            locationRange: Joi.number(),
+            locationVisibility: Joi.boolean(),
+            about: Joi.string().min(4).max(60).required(),
         });
         return Joi.validate(data, schema);
     }
