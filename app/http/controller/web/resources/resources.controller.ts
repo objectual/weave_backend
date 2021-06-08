@@ -26,9 +26,10 @@ export class Resources {
         }
     };
     cloudinary_image_get(req, res) {
-        let filename = req.params.filename.replace(/\//g, '.')
-        cloudinary.api.resource(`images/${req.params.userId}/${filename}`)
+        // let filename = req.params.filename.replace(/\//g, '.') //Dont know why I'm doing this
+        cloudinary.api.resource(`images/${req.params.userId}/${req.params.filename}`)
             .then(result => {
+                console.log(result)
                 let ext = result.format;
                 if (
                     ext === "png" ||

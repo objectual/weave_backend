@@ -16,7 +16,7 @@ let role_controller = new RoleMiddleware()
 
 userRouter.get('/', cache_controller.userSearch(), user_controller.get)
 
-userRouter.post('/', auth_controller.isAuthenticated(), role_controller.isUser(), validation_controller.validateUserUpdate(), user_controller.update)
+userRouter.put('/', auth_controller.isAuthenticated(), role_controller.isUser(), validation_controller.validateUserUpdate(), user_controller.update)
 
 userRouter.post('/uploader', auth_controller.isAuthenticated(), role_controller.isUser(), validation_controller.validateUserImageCount() ,Uploader.fields([{ name: "images" }]), user_controller.uploader)
 
