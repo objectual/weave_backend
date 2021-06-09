@@ -2,6 +2,7 @@
 
 import { IUser, Role } from "../models/user.model";
 import * as Joi from "joi";
+import { IFriends } from "../models/connection.model";
 interface UserRegister extends IUser {
     email: string;
     password: string;
@@ -27,6 +28,12 @@ interface UserUpdate extends IUser {
     username: string;
     name: string;
     about: string;
+}
+
+interface FriendRequestData extends IUser {
+    friend?: IUser['id'];
+    id?: IFriends['id'];
+    approved?: IFriends['approved'];
 }
 export class Validator {
     constructor() { }
@@ -79,7 +86,7 @@ export class Validator {
         });
         return Joi.validate(data, schema);
     }
-    
+
     //************************ VALIDATE USER UPDATE REQUIRED DATA ***********************//
     validateUserUpdateDataRequired(data: UserUpdate) {
         const schema = Joi.object().keys({
@@ -106,6 +113,22 @@ export class Validator {
             username: Joi.string(),
             name: Joi.string(),
             about: Joi.string(),
+        });
+        return Joi.validate(data, schema);
+    }
+
+    //************************ VALIDATE ADMIN USER UPDATE DATA ***********************//
+    validateUserFriendRequest(data: FriendRequestData) {
+        const schema = Joi.object().keys({
+            friend: Joi.string().required(),
+        });
+        return Joi.validate(data, schema);
+    }
+
+    validateUserFriendRequestUpdate(data: FriendRequestData) {
+        const schema = Joi.object().keys({
+            id: Joi.string().required(),
+            approved: Joi.string().required(),
         });
         return Joi.validate(data, schema);
     }

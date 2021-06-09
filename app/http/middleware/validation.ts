@@ -1,5 +1,6 @@
 import compose from "composable-middleware"
 import { Validator } from "../controller/validate";
+import { ValidateFriends } from "../models/connection.model";
 import { ValidateImages } from "../models/images.user.model";
 import { SenderService } from "../services/sender.service";
 export class ValidationMiddleware extends Validator {
@@ -123,6 +124,7 @@ export class ValidationMiddleware extends Validator {
                 })
         )
     }
+
     validateUserImageCount() {
         return (
             compose()
@@ -132,6 +134,61 @@ export class ValidationMiddleware extends Validator {
                         error: (msg) => SenderService.errorSend(res, { success: false, status: 409, msg }),
                         next: (count) => { req.body.alreadyUploaded = count; next() }
                     })
+                })
+        )
+    }
+
+    validateFriendRequest() {
+        return (
+            compose()
+                .use((req, res, next) => {
+                    super.validateUserFriendRequest(req.body)
+                        .then(data => {
+                            next();
+                        }).catch(error => {
+                            var errors = {
+                                success: false,
+                                msg: error.details[0].message,
+                                data: error.name,
+                                status: 400
+                            };
+                            SenderService.errorSend(res, errors);
+                            return;
+                        })
+                })
+                .use((req, res, next) => {
+                    if (req.body.friend == req.user.id) {
+                        SenderService.errorSend(res, { success: false, status: 400, msg: "Cannot send friend request" })
+                    }
+                    next();
+                })
+                .use((req, res, next) => {
+                    const validateFriends = new ValidateFriends();
+                    validateFriends.validate(req.body.friend, req.user.id, {
+                        error: (msg) => SenderService.errorSend(res, { success: false, status: 409, msg }),
+                        next: () => { next() }
+                    })
+                })
+        )
+    }
+
+    validateFriendRequestUpdate() {
+        return (
+            compose()
+                .use((req, res, next) => {
+                    super.validateUserFriendRequestUpdate({ approved: req.body.approved, id: req.params.id})
+                        .then(data => {
+                            next();
+                        }).catch(error => {
+                            var errors = {
+                                success: false,
+                                msg: error.details[0].message,
+                                data: error.name,
+                                status: 400
+                            };
+                            SenderService.errorSend(res, errors);
+                            return;
+                        })
                 })
         )
     }

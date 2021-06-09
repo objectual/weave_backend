@@ -14,9 +14,9 @@ let role_controller = new RoleMiddleware()
 
 connectionRouter.get('/friends', auth_controller.isAuthenticated(), connection_controller.getFriends)
 
-connectionRouter.post('/friends', auth_controller.isAuthenticated(), connection_controller.sendFriendRequest)
+connectionRouter.post('/friends', auth_controller.isAuthenticated(), validation_controller.validateFriendRequest(), connection_controller.sendFriendRequest)
 
-connectionRouter.put('/friends/:id', auth_controller.isAuthenticated(), connection_controller.updateFriendRequest)
+connectionRouter.put('/friends/:id', auth_controller.isAuthenticated(), validation_controller.validateFriendRequestUpdate(), connection_controller.updateFriendRequest)
 
 connectionRouter.delete('/friends/:id', auth_controller.isAuthenticated(), connection_controller.deleteFriendRequest)
 

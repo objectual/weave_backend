@@ -1,6 +1,5 @@
 "use strict";
-import { PrismaClient } from '@prisma/client';
-import { RedisService } from '../../cache/redis.service';
+import { PrismaClient } from '@prisma/client'; 
 import { IImages } from '../models/images.user.model';
 interface IImageCreate {
     cloudinaryId: string;
@@ -15,10 +14,9 @@ const select = {
     createdAt: true,
     updatedAt: true,
 }
-export class ImageService extends RedisService {
+export class ImageService {
     private prisma;
     constructor() {
-        super()
         this.prisma = new PrismaClient();
     }
     create(images: IImageCreate[]): Promise<IImages[]> {

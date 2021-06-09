@@ -17,8 +17,7 @@ export class ValidateImages {
     }
     public async validate(data: IUser['id'], { error, next }) {
         try {
-            let userImagesCount = await this.countImages(data)
-            console.log(userImagesCount)
+            let userImagesCount = await this.countImages(data) 
             if (userImagesCount == 3) return error("Can't upload more than 3 images for your profile")
             else return next(userImagesCount);
         } catch (e) {
