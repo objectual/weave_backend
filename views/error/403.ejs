@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../layouts/head'); %>
+</head>
+
+<link rel="stylesheet" href="/resources/css/style.css">
+
+<body class="container">
+    <div class="error-page">
+        <div> 
+            <h1 data-h1="403">403</h1>
+            <p data-p="FORBIDDEN">FORBIDDEN</p> 
+            <p data-p="<%=error%>"><%=error%></p>  
+        </div>
+    </div>
+    <div id="particles-js"></div>
+    <!--a(href="#").back GO BACK-->
+    <footer>
+        <%- include('../layouts/footer'); %>
+    </footer>
+</body>
+
+</html>

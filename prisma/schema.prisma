@@ -1,0 +1,97 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+//*************** USER LEVEL ***************//
+model User {
+  id              String        @id @default(uuid())
+  email           String?       @unique
+  blocked         Boolean       @default(false)
+  gcm             GCM[]
+  role            Role          @default(USER) // One role
+  profile         Profile? // One profile (optional) 
+  friendRequested Friends[]     @relation("Requested") // Containing other users IDS
+  friendedBy      Friends[]     @relation("FriendBy") // Containing my ID with other users
+  blockedUsers    BlockedList[] @relation("BlockedUser") // Containing other users IDS
+  blockedMe       BlockedList[] @relation("BlockedBy") // Containing my ID with other users
+  images          Images[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model GCM {
+  id       String  @unique
+  platform String
+  user     User?   @relation(fields: [userId], references: [id]) // One user (optional)
+  userId   String?
+}
+
+model Profile {
+  phoneNo             String    @unique
+  firstName           String?
+  lastName            String?
+  city                String?
+  country             String?
+  birthday            DateTime?
+  birthYearVisibility Boolean   @default(true)
+  approved            Boolean   @default(false)
+  about               String?
+  profileImage        String?   @default("https://easy-1-jq7udywfca-uc.a.run.app/public/images/user.png")
+  locationRange       Int       @default(10) // Noted in KM
+  locationVisibility  Boolean   @default(true)
+  user                User      @relation(fields: [userId], references: [id]) // Belongs to user
+  userId              String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@id([userId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+//*************** IMAGES LEVEL ***************//
+model Images {
+  id           String     @id @default(uuid())
+  cloudinaryId String
+  path         String
+  type         ImageTypes @default(USER)
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+enum ImageTypes {
+  USER
+  CHAT
+}
+
+//*************** CONNECTIONS LEVEL ***************//
+model Friends {
+  id        String   @id @default(uuid())
+  user      User     @relation(name: "FriendBy", fields: [userId], references: [id])
+  userId    String
+  friend    User     @relation(name: "Requested", fields: [friendId], references: [id])
+  friendId  String
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BlockedList {
+  id        String   @id @default(uuid())
+  blocked   User     @relation(name: "BlockedUser", fields: [blockedId], references: [id])
+  blockedId String
+  user      User     @relation(name: "BlockedBy", fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
