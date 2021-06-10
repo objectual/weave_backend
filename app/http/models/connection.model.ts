@@ -17,10 +17,10 @@ export class ValidateFriends {
     }
     public async validate(friendId: IUser['id'], userId: IUser['id'], { error, next }) {
         try {
-            let friendCheck = await this.alreadyFriends(friendId,userId)
-            if(friendCheck){
+            let friendCheck = await this.alreadyFriends(friendId, userId)
+            if (friendCheck) {
                 return error("Cannot send friend request")
-            }else{
+            } else {
                 return next()
             }
         } catch (e) {
@@ -54,12 +54,30 @@ export class ValidateBlocked {
     constructor() {
         this.prisma = new PrismaClient();
     }
-    public async validate(data: IUser['id'], { error, next }) {
-        try {
 
+    public async validate(blockedId: IUser['id'], userId: IUser['id'], { error, next }) {
+        try {
+            let blockedCheck = await this.alreadyBlocked(blockedId, userId)
+            if (blockedCheck) {
+                return error("Cannot block user")
+            } else {
+                return next()
+            }
         } catch (e) {
             console.log(e)
             return error(e);
         }
+    }
+
+    private async alreadyBlocked(blockedId: IUser['id'], userId: IUser['id']): Promise<string | boolean> {
+        return new Promise((resolve, reject) => {
+            this.prisma.blockedList.findFirst({ where: { blockedId, userId } })
+                .then(blocked => resolve(blocked == null ? false : true))
+                .catch(function (e) {
+                    return reject(e.message);
+                }).finally(() => {
+                    this.prisma.$disconnect();
+                })
+        })
     }
 }

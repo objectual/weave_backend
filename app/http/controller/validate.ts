@@ -32,8 +32,8 @@ interface UserUpdate extends IUser {
 
 interface FriendRequestData extends IUser {
     friend?: IUser['id'];
-    id?: IFriends['id'];
-    approved?: IFriends['approved'];
+    id?: IFriends['id']; 
+    approved?: IFriends['approved']; 
 }
 export class Validator {
     constructor() { }
@@ -117,7 +117,7 @@ export class Validator {
         return Joi.validate(data, schema);
     }
 
-    //************************ VALIDATE ADMIN USER UPDATE DATA ***********************//
+    //************************ VALIDATE FRIEND REQUEST DATA ***********************//
     validateUserFriendRequest(data: FriendRequestData) {
         const schema = Joi.object().keys({
             friend: Joi.string().required(),
@@ -129,6 +129,14 @@ export class Validator {
         const schema = Joi.object().keys({
             id: Joi.string().required(),
             approved: Joi.string().required(),
+        });
+        return Joi.validate(data, schema);
+    }
+
+    //************************ VALIDATE FRIEND BLOCK REQUEST DATA ***********************//
+    validateUserBlockRequest(data: FriendRequestData) {
+        const schema = Joi.object().keys({
+            user: Joi.string().required(),
         });
         return Joi.validate(data, schema);
     }

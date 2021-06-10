@@ -9,7 +9,7 @@ let role_controller = new RoleMiddleware();
 let redis_controller = new Redis()
 let auth_controller = new AuthenticationMiddleware();
 
-router.get('/keys/get', auth_controller.isAuthenticated(), redis_controller.getKeys)
+router.get('/keys/get', auth_controller.isAuthenticated(), role_controller.isAdmin(), redis_controller.getKeys)
 
 router.delete('/keys/delete', auth_controller.isAuthenticated(), role_controller.isAdmin(), redis_controller.flushdb)
 

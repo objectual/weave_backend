@@ -1,6 +1,6 @@
 import compose from "composable-middleware"
 import { Validator } from "../controller/validate";
-import { ValidateFriends } from "../models/connection.model";
+import { ValidateBlocked, ValidateFriends } from "../models/connection.model";
 import { ValidateImages } from "../models/images.user.model";
 import { SenderService } from "../services/sender.service";
 export class ValidationMiddleware extends Validator {
@@ -174,9 +174,9 @@ export class ValidationMiddleware extends Validator {
 
     validateFriendRequestUpdate() {
         return (
-            compose()
+            compose() 
                 .use((req, res, next) => {
-                    super.validateUserFriendRequestUpdate({ approved: req.body.approved, id: req.params.id})
+                    super.validateUserFriendRequestUpdate({ id: req.params.id })
                         .then(data => {
                             next();
                         }).catch(error => {
@@ -189,6 +189,39 @@ export class ValidationMiddleware extends Validator {
                             SenderService.errorSend(res, errors);
                             return;
                         })
+                })
+        )
+    }
+    validateBlockedRequest() {
+        return (
+            compose()
+                .use((req, res, next) => {
+                    super.validateUserBlockRequest(req.body)
+                        .then(data => {
+                            next();
+                        }).catch(error => {
+                            var errors = {
+                                success: false,
+                                msg: error.details[0].message,
+                                data: error.name,
+                                status: 400
+                            };
+                            SenderService.errorSend(res, errors);
+                            return;
+                        })
+                })
+                .use((req, res, next) => {
+                    if (req.body.user == req.user.id) {
+                        SenderService.errorSend(res, { success: false, status: 400, msg: "Cannot block user" })
+                    }
+                    next();
+                })
+                .use((req, res, next) => {
+                    const validateBlocked = new ValidateBlocked();
+                    validateBlocked.validate(req.body.user, req.user.id, {
+                        error: (msg) => SenderService.errorSend(res, { success: false, status: 409, msg }),
+                        next: () => { next() }
+                    })
                 })
         )
     }
