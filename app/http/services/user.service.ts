@@ -44,10 +44,9 @@ interface IFindResolver {
     users: IUserProfile[];
     count: number;
 }
-export class UserService extends RedisService {
-    private prisma;
+export class UserService {
+    private readonly prisma;
     constructor() {
-        super()
         this.prisma = new PrismaClient();
     }
     parseUserBigIntJSON(_user): IUserProfile {
@@ -217,10 +216,10 @@ export class UserService extends RedisService {
     }
 
     async redisSetUserData(auth: string, exp: number) {
-        await super.setUserStateToken(auth, exp);
+        await RedisService.setUserStateToken(auth, exp);
     }
 
     async redisUpdateUser(_user: IUserProfile) {
-        await super.setData(_user.profile, `${_user.profile.phoneNo}|${_user.profile.firstName}|${_user.profile.lastName}|${_user.id}|user`, 0).catch((error) => { throw error })
+        await RedisService.setData(_user.profile, `${_user.profile.phoneNo}|${_user.profile.firstName}|${_user.profile.lastName}|${_user.id}|user`, 0).catch((error) => { throw error })
     }
 }

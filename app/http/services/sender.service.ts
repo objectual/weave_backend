@@ -1,4 +1,9 @@
-export interface ErrorObject {
+interface ISender {
+    errorSend: (res, data: ErrorObject) => {};
+    send: (res, data: SuccessObject) => {}
+}
+
+interface ErrorObject {
     success: boolean;
     status: ErrorCodes;
     msg?: string;
@@ -6,7 +11,7 @@ export interface ErrorObject {
     message?: string
 }
 
-export interface SuccessObject {
+interface SuccessObject {
     success: boolean;
     status: ErrorCodes;
     msg?: string;
@@ -28,13 +33,13 @@ enum ErrorCodes {
     serverError = 500,
 }
 
-export class SenderService {
-    public static errorSend(res: any, data: ErrorObject) {
+export const Sender = new class Sender implements ISender {
+    errorSend(res: any, data: ErrorObject) {
         console.error("ERROR", data)
         return res.status(data.status).send(data);
     }
 
-    public static send(res: any, data: SuccessObject) {
+    send(res: any, data: SuccessObject) {
         return res.status(data.status).send(data);
     }
 }

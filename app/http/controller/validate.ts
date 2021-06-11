@@ -1,7 +1,6 @@
 "use strict";
-
+import Joi from "joi";
 import { IUser, Role } from "../models/user.model";
-import * as Joi from "joi";
 import { IFriends } from "../models/connection.model";
 interface UserRegister extends IUser {
     email: string;
@@ -37,9 +36,8 @@ interface FriendRequestData extends IUser {
 }
 export class Validator {
     constructor() { }
-
     //************************ VALIDATE USER REGISTER DATA ***********************//
-    validateRegisterData(data: UserRegister) {
+    protected validateRegisterData(data: UserRegister) {
         const schema = Joi.object().keys({
             phoneNo: Joi.number().required(),
             username: Joi.string(),
@@ -51,7 +49,7 @@ export class Validator {
     }
 
     //************************ VALIDATE USER VERIFY DATA ***********************//
-    validateVerifyData(data: UserRegister) {
+    protected validateVerifyData(data: UserRegister) {
         const schema = Joi.object().keys({
             phoneNo: Joi.number().required(),
             code: Joi.number().required(),
@@ -62,7 +60,7 @@ export class Validator {
     }
 
     //************************ VALIDATE USER LOGIN DATA ***********************//
-    validateLoginData(data: UserLogin) {
+    protected validateLoginData(data: UserLogin) {
         const schema = Joi.object().keys({
             phoneNo: Joi.string().required(),
             // role: Joi.string().required(),
@@ -71,7 +69,7 @@ export class Validator {
     }
 
     //************************ VALIDATE USER UPDATE DATA ***********************//
-    validateUserUpdateData(data: UserUpdate) {
+    protected validateUserUpdateData(data: UserUpdate) {
         const schema = Joi.object().keys({
             firstName: Joi.string(),
             lastName: Joi.string(),
@@ -88,7 +86,7 @@ export class Validator {
     }
 
     //************************ VALIDATE USER UPDATE REQUIRED DATA ***********************//
-    validateUserUpdateDataRequired(data: UserUpdate) {
+    protected validateUserUpdateDataRequired(data: UserUpdate) {
         const schema = Joi.object().keys({
             firstName: Joi.string().required(),
             lastName: Joi.string().required(),
@@ -105,7 +103,7 @@ export class Validator {
     }
 
     //************************ VALIDATE ADMIN USER UPDATE DATA ***********************//
-    validateAdminUserUpdateData(data: UserUpdate) {
+    protected validateAdminUserUpdateData(data: UserUpdate) {
         const schema = Joi.object().keys({
             email: Joi.string(),
             id: Joi.string().required(),
@@ -118,14 +116,14 @@ export class Validator {
     }
 
     //************************ VALIDATE FRIEND REQUEST DATA ***********************//
-    validateUserFriendRequest(data: FriendRequestData) {
+    protected validateUserFriendRequest(data: FriendRequestData) {
         const schema = Joi.object().keys({
             friend: Joi.string().required(),
         });
         return Joi.validate(data, schema);
     }
 
-    validateUserFriendRequestUpdate(data: FriendRequestData) {
+    protected validateUserFriendRequestUpdate(data: FriendRequestData) {
         const schema = Joi.object().keys({
             id: Joi.string().required(),
             approved: Joi.string().required(),
@@ -134,7 +132,7 @@ export class Validator {
     }
 
     //************************ VALIDATE FRIEND BLOCK REQUEST DATA ***********************//
-    validateUserBlockRequest(data: FriendRequestData) {
+    protected validateUserBlockRequest(data: FriendRequestData) {
         const schema = Joi.object().keys({
             user: Joi.string().required(),
         });

@@ -1,12 +1,14 @@
 "use strict";
 import { PrismaClient } from '@prisma/client'
+import { IImages } from './images.user.model';
 import { IProfile, IProfileCreate, IProfileEdit } from './profile.user.model';
 export interface IUser {
     id?: string;
     email?: string;
     role?: Role;
     blocked?: boolean;
-    gcm?: Array<GCM>;
+    gcm?:GCM[];
+    images?: IImages[];
     createdAt?: Date;
     updatedAt?: Date;
 }

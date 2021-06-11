@@ -2,8 +2,8 @@ import compose from "composable-middleware"
 import { Validator } from "../controller/validate";
 import { ValidateBlocked, ValidateFriends } from "../models/connection.model";
 import { ValidateImages } from "../models/images.user.model";
-import { SenderService } from "../services/sender.service";
-export class ValidationMiddleware extends Validator {
+import { Sender } from "../services/sender.service";
+export const ValidationMiddleware = new class ValidationMiddleware extends Validator {
     constructor() {
         super();
     }
@@ -21,7 +21,7 @@ export class ValidationMiddleware extends Validator {
                                 data: error.name,
                                 status: 400
                             };
-                            SenderService.errorSend(res, errors);
+                            Sender.errorSend(res, errors);
                             return;
                         });
                 })
@@ -41,7 +41,7 @@ export class ValidationMiddleware extends Validator {
                                 data: error.name,
                                 status: 400
                             };
-                            SenderService.errorSend(res, errors);
+                            Sender.errorSend(res, errors);
                             return;
                         });
                 })
@@ -61,7 +61,7 @@ export class ValidationMiddleware extends Validator {
                                 data: error.name,
                                 status: 400
                             };
-                            SenderService.errorSend(res, errors);
+                            Sender.errorSend(res, errors);
                             return;
                         })
                 })
@@ -82,7 +82,7 @@ export class ValidationMiddleware extends Validator {
                                     data: error.name,
                                     status: 400
                                 };
-                                SenderService.errorSend(res, errors);
+                                Sender.errorSend(res, errors);
                                 return;
                             })
                     } else {
@@ -96,7 +96,7 @@ export class ValidationMiddleware extends Validator {
                                     data: error.name,
                                     status: 400
                                 };
-                                SenderService.errorSend(res, errors);
+                                Sender.errorSend(res, errors);
                                 return;
                             })
                     }
@@ -118,7 +118,7 @@ export class ValidationMiddleware extends Validator {
                                 data: error.name,
                                 status: 400
                             };
-                            SenderService.errorSend(res, errors);
+                            Sender.errorSend(res, errors);
                             return;
                         })
                 })
@@ -131,7 +131,7 @@ export class ValidationMiddleware extends Validator {
                 .use((req, res, next) => {
                     const validateImages = new ValidateImages();
                     validateImages.validate(req.user.id, {
-                        error: (msg) => SenderService.errorSend(res, { success: false, status: 409, msg }),
+                        error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                         next: (count) => { req.body.alreadyUploaded = count; next() }
                     })
                 })
@@ -152,21 +152,21 @@ export class ValidationMiddleware extends Validator {
                                 data: error.name,
                                 status: 400
                             };
-                            SenderService.errorSend(res, errors);
+                            Sender.errorSend(res, errors);
                             return;
                         })
                 })
                 .use((req, res, next) => {
                     if (req.body.friend == req.user.id) {
-                        SenderService.errorSend(res, { success: false, status: 400, msg: "Cannot send friend request" })
+                        Sender.errorSend(res, { success: false, status: 400, msg: "Cannot send friend request" })
                     }
                     next();
                 })
                 .use((req, res, next) => {
                     const validateFriends = new ValidateFriends();
                     validateFriends.validate(req.body.friend, req.user.id, {
-                        error: (msg) => SenderService.errorSend(res, { success: false, status: 409, msg }),
-                        next: () => { next() }
+                        error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
+                        next: () => next()
                     })
                 })
         )
@@ -174,7 +174,7 @@ export class ValidationMiddleware extends Validator {
 
     validateFriendRequestUpdate() {
         return (
-            compose() 
+            compose()
                 .use((req, res, next) => {
                     super.validateUserFriendRequestUpdate({ id: req.params.id })
                         .then(data => {
@@ -186,7 +186,7 @@ export class ValidationMiddleware extends Validator {
                                 data: error.name,
                                 status: 400
                             };
-                            SenderService.errorSend(res, errors);
+                            Sender.errorSend(res, errors);
                             return;
                         })
                 })
@@ -206,21 +206,21 @@ export class ValidationMiddleware extends Validator {
                                 data: error.name,
                                 status: 400
                             };
-                            SenderService.errorSend(res, errors);
+                            Sender.errorSend(res, errors);
                             return;
                         })
                 })
                 .use((req, res, next) => {
                     if (req.body.user == req.user.id) {
-                        SenderService.errorSend(res, { success: false, status: 400, msg: "Cannot block user" })
+                        Sender.errorSend(res, { success: false, status: 400, msg: "Cannot block user" })
                     }
                     next();
                 })
                 .use((req, res, next) => {
                     const validateBlocked = new ValidateBlocked();
                     validateBlocked.validate(req.body.user, req.user.id, {
-                        error: (msg) => SenderService.errorSend(res, { success: false, status: 409, msg }),
-                        next: () => { next() }
+                        error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
+                        next: () => next()
                     })
                 })
         )

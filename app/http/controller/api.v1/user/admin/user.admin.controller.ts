@@ -1,21 +1,20 @@
 import * as _ from "lodash";
 import moment from "../../../../../modules/moment";
-import { UserService } from "../../../../services/user.service";
-import { RedisService } from "../../../../../cache/redis.service";
-import { SenderService } from "../../../../services/sender.service";
+import { UserService } from "../../../../services/user.service"; 
+import { Sender } from "../../../../services/sender.service";
 import { IUserEdit } from "../../../../models/user.model";
-export class User extends RedisService {
-    constructor() {
-        super();
+export class User {
+    userService:UserService;
+    constructor(){
+        this.userService = new UserService();
     }
     async get(req, res) {
         try {
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
-            let { key, id } = req.query;
-            let myUserService = new UserService();
+            let { key, id } = req.query; 
             if (id != null && id != "" && id != undefined) {
-                let user = await myUserService.findOneAdmin({ id })
+                let user = await this.userService.findOneAdmin({ id })
                 res.send({
                     success: true, user: user
                 })
@@ -30,8 +29,8 @@ export class User extends RedisService {
                     ]
                     query['OR'] = orQuery;
                 }
-                let { users, count } = await myUserService.findWithLimitAdmin(query, limit, page)
-                SenderService.send(res, {
+                let { users, count } = await this.userService.findWithLimitAdmin(query, limit, page)
+                Sender.send(res, {
                     success: true, data: users,
                     raw: req.user,
                     page: page,
@@ -41,7 +40,7 @@ export class User extends RedisService {
                 });
             }
         } catch (error) {
-            SenderService.errorSend(res, { success: false, msg: error.message, status: 500 });
+            Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
     async update(req, res) {
@@ -49,7 +48,7 @@ export class User extends RedisService {
             let update = req.body;
             if (req.body.birthday != null && req.body.birthday != "") {
                 if (!moment(req.body.birthday).olderThan14()) {
-                    SenderService.errorSend(res, { success: false, msg: "You must be older than 14 years to use the app", status: 400 });
+                    Sender.errorSend(res, { success: false, msg: "You must be older than 14 years to use the app", status: 400 });
                     return;
                 } else {
                     update['birthday'] = moment(req.body.birthday).format()
@@ -64,20 +63,19 @@ export class User extends RedisService {
             }
             if (req.body.blocked != null && req.body.blocked != "") {
                 user.blocked = req.body.blocked
-            }
-            const myUserService = new UserService();
-            let updatedUser = await myUserService.findOneAndUpdate({ id: req.params.id }, user)
+            } 
+            let updatedUser = await this.userService.findOneAndUpdate({ id: req.params.id }, user)
             if (updatedUser.profile.approved == false && updatedUser.profile.birthday != null && updatedUser.profile.firstName != null && updatedUser.profile.lastName != null && updatedUser.profile.about != null && updatedUser.profile.profileImage != null) {
-                updatedUser = await myUserService.findOneAndUpdate({ id: req.params.id }, { user: { profile: { approved: true } } })
+                updatedUser = await this.userService.findOneAndUpdate({ id: req.params.id }, { user: { profile: { approved: true } } })
             }
             if (updatedUser.profile.approved) {
-                myUserService.redisUpdateUser(updatedUser)
+                this.userService.redisUpdateUser(updatedUser)
             }
-            SenderService.send(res, {
+            Sender.send(res, {
                 status: 204, success: true, data: updatedUser, msg: "User updated successfully"
             });
         } catch (error) {
-            SenderService.errorSend(res, { success: false, msg: error.message, status: 500 });
+            Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
 }

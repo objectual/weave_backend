@@ -1,5 +1,5 @@
 require('dotenv').config();
-const cloudinary = require('cloudinary').v2; 
+const cloudinary = require('cloudinary').v2;
 import config from "config";
 
 cloudinary.config({
@@ -13,8 +13,7 @@ export interface ICloudinaryUpload {
     path: string;
     url: string;
 }
-export class Cloudinary {
-
+export const Cloudinary = new class Cloudinary {
     uploads(file, name) {
         return new Promise((resolve, reject) => {
             try {

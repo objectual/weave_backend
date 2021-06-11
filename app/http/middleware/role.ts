@@ -1,6 +1,5 @@
 import compose from "composable-middleware";
-import e from "express";
-export class RoleMiddleware {
+export const RoleMiddleware = new class RoleMiddleware {
     isAdmin() {
         return (
             compose()
