@@ -4,7 +4,7 @@ import { ValidationMiddleware } from '../../../middleware/validation';
 import { Authentication } from './auth.controller'
 export const authRouter = express.Router();
 
-let user_controller = new Authentication();
+const user_controller = new Authentication();
 
 authRouter.post('/', ValidationMiddleware.validateUserLogin(), user_controller.login);
 

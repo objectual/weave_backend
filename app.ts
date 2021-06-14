@@ -17,14 +17,13 @@ const logger = require("morgan");
 
 const RedisStore = require('connect-redis')(session)
 import { RedisService } from './app/cache/redis.service';
-import { BrowserMiddleware } from './app/http/middleware/browser';
-const redisClient = new RedisService();
+import { BrowserMiddleware } from './app/http/middleware/browser'; 
 
 var app = express();
 app.use(cors());
 
 app.use(session({
-    store: new RedisStore({ client: redisClient.connectCache() }),
+    store: new RedisStore({ client: RedisService.connectCache() }),
     secret: process.env.PASSPHRASE,
     resave: false,
     saveUninitialized: false,

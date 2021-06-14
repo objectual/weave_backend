@@ -1,47 +1,66 @@
-def gv
+#!groovy
+
+/*
+The MIT License
+Copyright (c) 2015-, CloudBees, Inc., and a number of other of contributors
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
 pipeline {
     agent any
-    parameters{
-        choice(name: 'VERSION', choices:['1.1.0', '1.2.0', '1.3.0'], description: '')
-        booleanParam(name: 'executeTests', defaultValue: true, description: '')
-    }
-    // environment {
-    //     New_Version = '1.3.0'
-    // }
-    stages{
-         stage('init'){
-            steps {
-                script {
-                    gv = load "script.groovy"
-                
-		}
-            }
-        }
-        stage('build'){
-            steps {
-                script {
-                    gv.buildApp()
+    stages {
+        stage('Deploy') {
+                parallel {
+                    stage('Heroku Deployment') {
+                        steps {
+                            echo 'Push to Heroku Repo'
+                            withCredentials([
+                                usernamePassword(
+                                    credentialsId: 'heroku',
+                                    usernameVariable: 'USER',
+                                    passwordVariable: 'PASS'
+                                )]) {
+                                    sh 'git push https://$USER:$PASS@git.heroku.com/iweave.git HEAD:master'
+                                }
+                        }
+                    }
+
+                    stage('GCP Deployment') {
+                        steps {
+                            script {
+                                try {
+                                echo 'Deploying Code'
+                                withCredentials([
+                                        usernamePassword(
+                                            credentialsId: 'ahmed-git-ITSOL',
+                                            usernameVariable: 'USER',
+                                            passwordVariable: 'PASS'
+                                        )]) {
+                                            sshagent (credentials: ['GCP-Admin']) {
+                                                sh 'ssh -o StrictHostKeyChecking=no root@ "bash master-pull.sh $USER $PASS "'
+                                                sh 'ssh -o StrictHostKeyChecking=no root@ "bash docker-up.sh"'
+                                            }
+                                        }
+                                } catch (err) {
+                                sh 'Could not connect to HOST'
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-         stage('test'){
-             when {
-                 expression {
-                     params.executeTests
-                 }
-             }
-             steps {
-                 script {
-                     gv.testApp()
-                 }
-             }
-        }
-        stage('development'){
-             steps{
-                script {
-                    gv.deployApp()
-                }
-             }
         }
     }
 }

@@ -4,20 +4,12 @@ import { AuthService } from "../../../services/auth.service";
 import { IProfileCreate, ValidateProfile } from "../../../models/profile.user.model";
 import { Sender } from "../../../services/sender.service";
 import { ValidateUser } from "../../../models/user.model";
-
 export class Authentication {
-    userService: UserService;
-    userValidationService: ValidateUser;
-    profileValidateService: ValidateProfile;
-    constructor() {
-        this.userService = new UserService();
-        this.profileValidateService = new ValidateProfile();
-        this.userValidationService = new ValidateUser();
-    }
     login(req, res) {
         try {
             let { phoneNo } = req.body;
-            this.userService.sendCode(phoneNo)
+            const userService = new UserService();
+            userService.sendCode(phoneNo)
                 .then(message => {
                     Sender.send(res, { success: true, msg: "Verification code sent to your phone number", status: 200 });
                 }).catch((error) => {
@@ -30,17 +22,20 @@ export class Authentication {
 
     async verify(req, res) {
         try {
+            const userService = new UserService();
+            const profileValidateService = new ValidateProfile();
+            const userValidationService = new ValidateUser();
             let { phoneNo, code, gcm_id, platform } = req.body
-            await this.userService.checkCode(phoneNo, code)
+            await userService.checkCode(phoneNo, code)
                 .then(async user => {
                     let existing = false;
                     let approved = false;
                     if (user == null) {
-                        await this.profileValidateService.validate({ phoneNo }, {
+                        await profileValidateService.validate({ phoneNo }, {
                             error: message => Sender.errorSend(res, { success: false, msg: message, status: 400 }),
                             next: async (profile: IProfileCreate) => {
                                 let _newUser = { profile: { create: profile } }
-                                user = await this.userService.create(_newUser, profile);
+                                user = await userService.create(_newUser, profile);
                                 existing = false;
                                 approved = false;
                             }
@@ -55,14 +50,14 @@ export class Authentication {
                             existing = true; approved = true
                         }
                     }
-                    await this.userValidationService.validateGCM(user, gcm_id, {
+                    await userValidationService.validateGCM(user, gcm_id, {
                         error: message => Sender.errorSend(res, { success: false, msg: message, status: 400 }),
                         next: async uniqueGCM => {
                             let token = await AuthService.generateAuthToken({ id: user.id, role: user.role })
                             // myUserService.redisSetUserData(token, moment(moment().add(48, "hours")).fromNow_seconds())
                             req.session.auth = token;
                             if (!uniqueGCM) {
-                                user = await this.userService.findOneAndUpdate(
+                                user = await userService.findOneAndUpdate(
                                     { id: user.id },
                                     { gcm: { create: [{ id: gcm_id, platform }] } }
                                 )
@@ -86,7 +81,7 @@ export class Authentication {
                                 success.raw = { existing: true, approved: false }
                             }
                             if (existing && approved) {
-                                this.userService.redisUpdateUser(user)
+                                userService.redisUpdateUser(user)
                                 success.msg = "Logged in successfully."
                                 success.status = 200
                                 success.raw = { existing: true, approved: true }
@@ -106,7 +101,8 @@ export class Authentication {
 
     async logout(req, res) {
         try {
-            this.userService.findOneAndUpdate(
+            const userService = new UserService(); 
+            userService.findOneAndUpdate(
                 { id: req.user.id },
                 { gcm: { deleteMany: [{ id: req.body.gcm_id }] }, }
             ).then((_user) => {

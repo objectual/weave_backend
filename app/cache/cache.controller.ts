@@ -2,13 +2,10 @@
 
 import { RedisService } from "./redis.service";
 import * as _  from 'lodash';
-export class Redis extends RedisService{
-    constructor(){
-        super()
-    }
+export class Redis {
     async getKeys(req, res) {
         try {
-            super.getRedisKeys()
+            RedisService.getRedisKeys()
                 .then((data) => {
                     res.json(data);
                 })
@@ -23,7 +20,7 @@ export class Redis extends RedisService{
                 res.status(401).send({ success: false, message: "Missing credentials" })
                 return;
             } else if (req.body.pass == process.env.REDIS_PASS) {
-                super.deleteRedisKeys()
+                RedisService.deleteRedisKeys()
                     .then((data) => {
                         res.json(data);
                     })
@@ -43,7 +40,7 @@ export class Redis extends RedisService{
                 res.status(401).send({ success: false, message: "Missing credentials / key" })
                 return;
             } else if (req.body.pass == process.env.REDIS_PASS) {
-                super.searchAndDeleteKeys(req.body.key)
+                RedisService.searchAndDeleteKeys(req.body.key)
                     .then((data) => {
                         res.json(data);
                     })

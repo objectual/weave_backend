@@ -23,6 +23,7 @@ const selectUser = {
             profileImage: true,
             locationRange: true,
             locationVisibility: true,
+            userId: true,
         }
     },
     createdAt: true,
@@ -196,8 +197,10 @@ export class UserService {
                                         resolve(user);
                                     })
                                     .catch(error => reject(error))
-                            } else {
+                            } else if (code == 99 && process.env.NODE_ENV == "development") {
                                 reject("Code does not match the code sent to your phone")
+                            }else{
+                                reject("Invalid code")
                             }
                         })
                         .catch(error => { reject(error) })

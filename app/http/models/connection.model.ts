@@ -31,7 +31,7 @@ export class ValidateFriends {
 
     private async alreadyFriends(friendId: IUser['id'], userId: IUser['id']): Promise<string | boolean> {
         return new Promise((resolve, reject) => {
-            this.prisma.friends.findFirst({ where: { friendId, userId, approved: true } })
+            this.prisma.friends.findFirst({ where: { friendId, userId } })
                 .then(friend => resolve(friend == null ? false : true))
                 .catch(function (e) {
                     return reject(e.message);

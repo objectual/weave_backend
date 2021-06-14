@@ -41,7 +41,7 @@ model Profile {
   birthYearVisibility Boolean   @default(true)
   approved            Boolean   @default(false)
   about               String?
-  profileImage        String?   @default("https://easy-1-jq7udywfca-uc.a.run.app/public/images/user.png")
+  profileImage        String?   @default("https://res.cloudinary.com/weavemasology/image/upload/v1623680410/images/user_wghiyv.png")
   locationRange       Int       @default(10) // Noted in KM
   locationVisibility  Boolean   @default(true)
   user                User      @relation(fields: [userId], references: [id]) // Belongs to user

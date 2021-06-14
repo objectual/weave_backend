@@ -1,20 +1,17 @@
 import * as _ from "lodash";
 import moment from "../../../../../modules/moment";
-import { UserService } from "../../../../services/user.service"; 
+import { UserService } from "../../../../services/user.service";
 import { Sender } from "../../../../services/sender.service";
 import { IUserEdit } from "../../../../models/user.model";
 export class User {
-    userService:UserService;
-    constructor(){
-        this.userService = new UserService();
-    }
     async get(req, res) {
         try {
+            const userService = new UserService();
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
-            let { key, id } = req.query; 
+            let { key, id } = req.query;
             if (id != null && id != "" && id != undefined) {
-                let user = await this.userService.findOneAdmin({ id })
+                let user = await userService.findOneAdmin({ id })
                 res.send({
                     success: true, user: user
                 })
@@ -29,7 +26,7 @@ export class User {
                     ]
                     query['OR'] = orQuery;
                 }
-                let { users, count } = await this.userService.findWithLimitAdmin(query, limit, page)
+                let { users, count } = await userService.findWithLimitAdmin(query, limit, page)
                 Sender.send(res, {
                     success: true, data: users,
                     raw: req.user,
@@ -45,6 +42,7 @@ export class User {
     }
     async update(req, res) {
         try {
+            const userService = new UserService();
             let update = req.body;
             if (req.body.birthday != null && req.body.birthday != "") {
                 if (!moment(req.body.birthday).olderThan14()) {
@@ -63,13 +61,13 @@ export class User {
             }
             if (req.body.blocked != null && req.body.blocked != "") {
                 user.blocked = req.body.blocked
-            } 
-            let updatedUser = await this.userService.findOneAndUpdate({ id: req.params.id }, user)
+            }
+            let updatedUser = await userService.findOneAndUpdate({ id: req.params.id }, user)
             if (updatedUser.profile.approved == false && updatedUser.profile.birthday != null && updatedUser.profile.firstName != null && updatedUser.profile.lastName != null && updatedUser.profile.about != null && updatedUser.profile.profileImage != null) {
-                updatedUser = await this.userService.findOneAndUpdate({ id: req.params.id }, { user: { profile: { approved: true } } })
+                updatedUser = await userService.findOneAndUpdate({ id: req.params.id }, { user: { profile: { approved: true } } })
             }
             if (updatedUser.profile.approved) {
-                this.userService.redisUpdateUser(updatedUser)
+                userService.redisUpdateUser(updatedUser)
             }
             Sender.send(res, {
                 status: 204, success: true, data: updatedUser, msg: "User updated successfully"

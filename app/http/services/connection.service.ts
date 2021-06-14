@@ -90,7 +90,7 @@ export class BlockedService {
     select = {
         id: true,
         user: true,
-        friend: true,
+        blocked: true,
         createdAt: true,
         updatedAt: true,
     }
