@@ -7,7 +7,11 @@ export class Connection {
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
             const friendsService = new FriendsService();
-            let { friends, count } = await friendsService.findWithLimit({ userId: req.user.id, approved: true }, limit, page)
+            let orQuery = [
+                { userId: req.user.id, approved: true },
+                { friendId: req.user.id, approved: true },
+            ]
+            let { friends, count } = await friendsService.findWithLimit({ OR: orQuery }, limit, page)
             Sender.send(res, { success: true, data: friends, count, page, pages: Math.ceil(count / limit), status: 200 })
         } catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
@@ -51,13 +55,19 @@ export class Connection {
     }
     async updateFriendRequest(req, res) {
         try {
+            req.body.approved = req.body.approved == "true" ? true : false;
             const friendsService = new FriendsService();
-            let getRequest = await friendsService.findOne({ id: req.params.id, userId: req.user.id })
+            // Approve only requests made by the OTHER USER
+            let getRequest = await friendsService.findOne({ id: req.params.id, friendId: req.user.id })
+            if (getRequest == null) {
+                Sender.errorSend(res, { success: false, status: 409, msg: "Something impossible happened" })
+                return;
+            }
             if (getRequest.approved == req.body.approved) {
                 Sender.errorSend(res, { success: false, status: 409, msg: "Action already taken" })
                 return;
             }
-            let updateRequest = await friendsService.findOneAndUpdate({ id: req.params.id, userId: req.user.id }, { approved: req.body.approved })
+            let updateRequest = await friendsService.findOneAndUpdate({ id: req.params.id }, { approved: req.body.approved })
             Sender.send(res, { success: true, status: 200, msg: "Friend request updated", data: updateRequest })
         } catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
@@ -66,7 +76,12 @@ export class Connection {
     async deleteFriendRequest(req, res) {
         try {
             const friendService = new FriendsService();
-            let deleteFriend = await friendService.delete({ id: req.params.id, userId: req.user.id })
+            let getRequest = await friendService.findOne({ id: req.params.id })
+            if (getRequest == null || (getRequest.user.profile.userId != req.user.id && getRequest.user.profile.userId != req.user.id)) {
+                Sender.errorSend(res, { success: false, status: 409, msg: "Something impossible happened" })
+                return;
+            }
+            let deleteFriend = await friendService.delete({ id: req.params.id })
             Sender.send(res, { success: true, data: deleteFriend, msg: "Friend removed", status: 200 })
         } catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
@@ -88,7 +103,6 @@ export class Connection {
             let body = {
                 userId: req.user.id,
                 blockedId: req.body.user,
-                approved: false,
             }
             const friendService = new FriendsService();
             let orQuery = [
@@ -96,7 +110,9 @@ export class Connection {
                 { userId: req.body.user, friendId: req.user.id },
             ]
             let alreadyFriends = await friendService.find({ OR: orQuery })
-            await friendService.delete({ id: { in: alreadyFriends.map(x => x.id) } })
+            if (alreadyFriends.length != 0) { // Unfriending user
+                await friendService.delete({ id: { in: alreadyFriends.map(x => x.id) } })
+            }
             const blockedService = new BlockedService();
             let blocked = await blockedService.create(body);
             Sender.send(res, { success: true, data: blocked, status: 201, msg: "User blocked" })
@@ -107,6 +123,11 @@ export class Connection {
     async unblockUser(req, res) {
         try {
             const blockedService = new BlockedService();
+            let getRequest = await blockedService.findOne({ id: req.params.id, userId: req.user.id })
+            if (getRequest == null) {
+                Sender.errorSend(res, { success: false, status: 409, msg: "Something impossible happened" })
+                return;
+            }
             let unblocked = await blockedService.delete({ id: req.params.id, userId: req.user.id })
             Sender.send(res, { success: true, data: unblocked, msg: "User unblocked", status: 200 })
         } catch (error) {

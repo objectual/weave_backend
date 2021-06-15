@@ -9,19 +9,32 @@ import { ImageService } from "../../../services/image.service";
 export class User {
     async get(req, res) {
         try {
-            const userService = new UserService(); 
+            const userService = new UserService();
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
             let { key, id } = req.query;
             if (id != null && id != "" && id != undefined) {
-                let user = await userService.findOne({ id })
-                userService.redisUpdateUser(user);
-                res.send({
-                    success: true, user: user.profile
-                })
-                return;
+                let checkInMyList = _.indexOf(req.user.data.blockedByMe, id)
+                let checkInOthersList = _.indexOf(req.user.data.blockedByOthers, id)
+                if (checkInMyList == -1 || checkInOthersList == -1) {
+                    // Found a blocked user
+                    Sender.errorSend(res, { success: false, msg: "User not found", status: 400 })
+                    return;
+                } else {
+                    let user = await userService.findOne({ id })
+                    if (user == null) {
+                        Sender.errorSend(res, { success: false, msg: "User not found", status: 400 })
+                        return;
+                    } else {
+                        userService.redisUpdateUser(user);
+                        Sender.send(res, {
+                            success: true, data: user.profile, status: 200
+                        })
+                        return;
+                    }
+                }
             } else {
-                let query = { blocked: false, role: "USER", profile: { approved: true } }
+                let query = { blocked: false, profile: { approved: true } }
                 if (key != null && key != "") {
                     let orQuery = [
                         { email: { contains: key, mode: "insensitive", } },
@@ -32,10 +45,19 @@ export class User {
                 }
                 let { users, count } = await userService.findWithLimit(query, limit, page)
                 let user_profiles = users.map(x => x.profile)
+                user_profiles = _.filter(user_profiles, x => {
+                    let checkInMyList = _.indexOf(req.user.data.blockedByMe, x.userId)
+                    let checkInOthersList = _.indexOf(req.user.data.blockedByOthers, x.userId)
+                    if (checkInMyList == -1 && checkInOthersList == -1) {
+                        // Didn't find a blocked user
+                        return x;
+                    }
+                })
                 users.map(user => userService.redisUpdateUser(user))
                 Sender.send(res, {
-                    success: true, data: user_profiles,
-                    raw: req.user,
+                    success: true, 
+                    data: user_profiles,
+                    raw: "live",
                     page: page,
                     pages: Math.ceil(count / limit),
                     count,
@@ -61,8 +83,8 @@ export class User {
             }
             update['city'] = update.city.toLowerCase();
             update['country'] = update.country.toLowerCase();
-            update['birthYearVisibility'] = update.birthYearVisibility?true:false;
-            update['locationVisibility'] = update.locationVisibility?true:false;
+            update['birthYearVisibility'] = update.birthYearVisibility ? true : false;
+            update['locationVisibility'] = update.locationVisibility ? true : false;
             update['locationRange'] = Number(update.locationRange);
             let user: IUserEdit = {
                 profile: {

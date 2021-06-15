@@ -106,9 +106,9 @@ export const RedisService = new class RedisService {
         return new Promise((resolve, reject) => {
             try {
                 if (exp == 0) {
-                    client.setex(`${key}`, 48 * 60 * 60 * 1000, JSON.stringify(data)); //2 day record
+                    client.setex(`${key.toLowerCase()}`, 48 * 60 * 60 * 1000, JSON.stringify(data)); //2 day record
                 } else {
-                    client.setex(`${key}`, exp, JSON.stringify(data));
+                    client.setex(`${key.toLowerCase()}`, exp, JSON.stringify(data));
                 }
                 resolve(true);
             } catch (error) {

@@ -3,6 +3,7 @@ import { Validator } from "../controller/validate";
 import { ValidateBlocked, ValidateFriends } from "../models/connection.model";
 import { ValidateImages } from "../models/images.user.model";
 import { Sender } from "../services/sender.service";
+import * as _ from "lodash"
 export const ValidationMiddleware = new class ValidationMiddleware extends Validator {
     constructor() {
         super();
@@ -169,6 +170,14 @@ export const ValidationMiddleware = new class ValidationMiddleware extends Valid
                         next: () => next()
                     })
                 })
+                .use((req, res, next) => {
+                    let checkInMyList = _.indexOf(req.user.data.blockedByMe, req.body.friend)
+                    let checkInOthersList = _.indexOf(req.user.data.blockedByOthers, req.body.friend)
+                    if (checkInMyList != -1 && checkInOthersList != -1) {
+                        next();
+                    }
+                    Sender.errorSend(res, { success: false, status: 409, msg: "Cannot send friend request" })
+                })
         )
     }
 
@@ -176,7 +185,7 @@ export const ValidationMiddleware = new class ValidationMiddleware extends Valid
         return (
             compose()
                 .use((req, res, next) => {
-                    super.validateUserFriendRequestUpdate({ id: req.params.id })
+                    super.validateUserFriendRequestUpdate({ id: req.params.id, approved: req.body.approved })
                         .then(data => {
                             next();
                         }).catch(error => {
@@ -192,6 +201,27 @@ export const ValidationMiddleware = new class ValidationMiddleware extends Valid
                 })
         )
     }
+
+    blockedUsersList() {
+        return (
+            compose() 
+                .use((req, res, next) => {
+                    // Attaches blocked users in both list to the request
+                    const validateBlocked = new ValidateBlocked();
+                    validateBlocked.userInBlockList(req.user.id, {
+                        error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
+                        next: (blockedObject) => {
+                            if (blockedObject != null) {
+                                req.user.data.blockedByMe = blockedObject.blockedByMe // users I blocked
+                                req.user.data.blockedByOthers = blockedObject.blockedByOthers // users who blocked me 
+                            }
+                            next()
+                        }
+                    })
+                })
+        )
+    }
+
     validateBlockedRequest() {
         return (
             compose()

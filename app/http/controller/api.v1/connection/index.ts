@@ -12,7 +12,7 @@ connectionRouter.get('/friends/requests', AuthMiddleware.isAuthenticated(), conn
 
 connectionRouter.get('/friends/pending', AuthMiddleware.isAuthenticated(), connection_controller.getFriendsPendingApproval)
 
-connectionRouter.post('/friends', AuthMiddleware.isAuthenticated(), ValidationMiddleware.validateFriendRequest(), connection_controller.sendFriendRequest)
+connectionRouter.post('/friends', AuthMiddleware.isAuthenticated(), ValidationMiddleware.blockedUsersList(), ValidationMiddleware.validateFriendRequest(), connection_controller.sendFriendRequest)
 
 connectionRouter.put('/friends/:id', AuthMiddleware.isAuthenticated(), ValidationMiddleware.validateFriendRequestUpdate(), connection_controller.updateFriendRequest)
 

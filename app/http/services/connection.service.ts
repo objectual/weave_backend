@@ -13,8 +13,8 @@ export class FriendsService {
     private prisma;
     select = {
         id: true,
-        user: true,
-        friend: true,
+        user: { select: { profile: true } },
+        friend: { select: { profile: true } },
         approved: true,
         createdAt: true,
         updatedAt: true,
@@ -35,13 +35,13 @@ export class FriendsService {
     find(where): Promise<IFriends[]> {
         return new Promise((resolve, reject) => {
             this.prisma.friends
-                .find({ where, select: this.select })
+                .findMany({ where, select: this.select })
                 .then(friend => resolve(friend))
                 .catch(error => reject(error))
                 .finally(() => this.prisma.$disconnect())
         });
     }
-    
+
     findOne(where): Promise<IFriends> {
         return new Promise((resolve, reject) => {
             this.prisma.friends
@@ -78,7 +78,7 @@ export class FriendsService {
     findOneAndUpdate(where, data, options = null): Promise<any> {
         return new Promise((resolve, reject) => {
             this.prisma.friends
-                .update({ where, data })
+                .update({ where, data, select: this.select })
                 .then(data => resolve(data))
                 .catch(error => { reject(error) })
                 .finally(() => this.prisma.$disconnect())
@@ -89,10 +89,9 @@ export class BlockedService {
     private prisma;
     select = {
         id: true,
-        user: true,
-        blocked: true,
+        user: { select: { profile: true } },
+        blocked: { select: { profile: true } },
         createdAt: true,
-        updatedAt: true,
     }
     constructor() {
         this.prisma = new PrismaClient();
@@ -105,6 +104,26 @@ export class BlockedService {
                 .catch(error => reject(error))
                 .finally(() => this.prisma.$disconnect())
         })
+    }
+    
+    find(where): Promise<IBlocked[]> {
+        return new Promise((resolve, reject) => {
+            this.prisma.blockedList
+                .findMany({ where, select: this.select })
+                .then(block => resolve(block))
+                .catch(error => reject(error))
+                .finally(() => this.prisma.$disconnect())
+        });
+    }
+
+    findOne(where): Promise<IBlocked> {
+        return new Promise((resolve, reject) => {
+            this.prisma.blockedList
+                .findFirst({ where, select: this.select })
+                .then(block => resolve(block))
+                .catch(error => reject(error))
+                .finally(() => this.prisma.$disconnect())
+        });
     }
 
     findWithLimit(where, limit = null, page = null): Promise<IBlockedResolver> {
