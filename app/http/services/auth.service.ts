@@ -14,7 +14,7 @@ export class AuthService {
                 audience: a,
                 algorithm: "RS256",
             };
-            var payload = {
+            var payload = { 
                 id,
                 role
             };
