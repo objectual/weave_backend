@@ -204,7 +204,7 @@ export const ValidationMiddleware = new class ValidationMiddleware extends Valid
 
     blockedUsersList() {
         return (
-            compose() 
+            compose()
                 .use((req, res, next) => {
                     // Attaches blocked users in both list to the request
                     const validateBlocked = new ValidateBlocked();
@@ -255,4 +255,26 @@ export const ValidationMiddleware = new class ValidationMiddleware extends Valid
                 })
         )
     }
+
+    validateEventCreate() {
+        return (
+            compose()
+                .use((req, res, next) => {
+                    super.validateUserFriendRequestUpdate({ id: req.params.id, approved: req.body.approved })
+                        .then(data => {
+                            next();
+                        }).catch(error => {
+                            var errors = {
+                                success: false,
+                                msg: error.details[0].message,
+                                data: error.name,
+                                status: 400
+                            };
+                            Sender.errorSend(res, errors);
+                            return;
+                        })
+                })
+        )
+    }
+
 }
