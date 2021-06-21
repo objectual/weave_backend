@@ -9,14 +9,6 @@ export class Events {
         }
     }
     
-    createEvent(req, res){
-        try{
-
-        }catch(e){
-            Sender.errorSend(res, {success: false, msg: e.messages, status: 500})
-        }
-    }
-    
     updateEvent(req, res){
         try{
 
