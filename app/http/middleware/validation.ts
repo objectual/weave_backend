@@ -4,6 +4,7 @@ import { ValidateBlocked, ValidateFriends } from "../models/connection.model";
 import { ValidateImages } from "../models/images.user.model";
 import { Sender } from "../services/sender.service";
 import * as _ from "lodash"
+import { EventService } from "../services/event.service";
 export const ValidationMiddleware = new class ValidationMiddleware extends Validator {
     constructor() {
         super();
@@ -173,10 +174,11 @@ export const ValidationMiddleware = new class ValidationMiddleware extends Valid
                 .use((req, res, next) => {
                     let checkInMyList = _.indexOf(req.user.data.blockedByMe, req.body.friend)
                     let checkInOthersList = _.indexOf(req.user.data.blockedByOthers, req.body.friend)
-                    if (checkInMyList != -1 && checkInOthersList != -1) {
+                    if (checkInMyList == -1 && checkInOthersList == -1) {
                         next();
+                    }else{
+                        Sender.errorSend(res, { success: false, status: 409, msg: "Cannot send friend request" })
                     }
-                    Sender.errorSend(res, { success: false, status: 409, msg: "Cannot send friend request" })
                 })
         )
     }
@@ -214,8 +216,11 @@ export const ValidationMiddleware = new class ValidationMiddleware extends Valid
                             if (blockedObject != null) {
                                 req.user.data.blockedByMe = blockedObject.blockedByMe // users I blocked
                                 req.user.data.blockedByOthers = blockedObject.blockedByOthers // users who blocked me 
+                            }else{
+                                req.user.data.blockedByMe = [] // users I blocked
+                                req.user.data.blockedByOthers = [] // users who blocked me  
+                                next()
                             }
-                            next()
                         }
                     })
                 })
@@ -260,7 +265,7 @@ export const ValidationMiddleware = new class ValidationMiddleware extends Valid
         return (
             compose()
                 .use((req, res, next) => {
-                    super.validateUserFriendRequestUpdate({ id: req.params.id, approved: req.body.approved })
+                    super.validateCreateEvent(req.body)
                         .then(data => {
                             next();
                         }).catch(error => {
@@ -273,6 +278,35 @@ export const ValidationMiddleware = new class ValidationMiddleware extends Valid
                             Sender.errorSend(res, errors);
                             return;
                         })
+                })
+        )
+    }
+
+    validateEventUpdate() {
+        return (
+            compose()
+                .use((req, res, next) => {
+                    super.validateUpdateEvent(req.body)
+                        .then(data => {
+                            next();
+                        }).catch(error => {
+                            var errors = {
+                                success: false,
+                                msg: error.details[0].message,
+                                data: error.name,
+                                status: 400
+                            };
+                            Sender.errorSend(res, errors);
+                            return;
+                        })
+                })
+                .use(async (req, res, next) => {
+                    const eventService = new EventService()
+                    let event = await eventService.findOne({ id: req.params.id, userId: req.user.id })
+                    if (event == null) {
+                        Sender.errorSend(res, { success: false, status: 409, msg: "Only event owner can update event" })
+                    }
+                    next();
                 })
         )
     }

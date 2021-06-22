@@ -121,12 +121,14 @@ export class User {
                         fs.unlink(file, () => { console.log(`Deleted ${file}`) });
                     })
                 } else {
+                    console.log("Starting upload")
                     let images: ICloudinaryUpload[] = await Promise.all(files.map(async file => {
                         let pathSplit = file.split('\\')[2].split('.').slice(0, -1).join('.')
                         const imgURL = await image(file, pathSplit);
                         fs.unlink(file, () => { console.log(`Deleted ${file}`) });
                         return imgURL;
                     }))
+                    console.log(images, "DONE")
                     let uploadImages = await imageService.create(images.map(i => { return { cloudinaryId: i.id, path: i.path, userId: req.user.id } }))
                     Sender.send(res, { success: true, data: uploadImages, msg: "Images uploaded", status: 201 })
                 }

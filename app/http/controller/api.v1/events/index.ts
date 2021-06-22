@@ -7,8 +7,8 @@ let events_controller = new Events();
 
 eventsRouter.get('/', events_controller.getEvents)
 
-eventsRouter.post('/', ValidationMiddleware.blockedUsersList(), ValidationMiddleware.validateFriendRequest(), events_controller.createEvent)
+eventsRouter.post('/', ValidationMiddleware.blockedUsersList(), ValidationMiddleware.validateEventCreate(), events_controller.createEvent)
 
-eventsRouter.put('/:id', ValidationMiddleware.validateFriendRequestUpdate(), events_controller.updateEvent)
+eventsRouter.put('/:id', ValidationMiddleware.validateEventUpdate(), events_controller.updateEvent)
 
 eventsRouter.delete('/:id', events_controller.deleteEvent)

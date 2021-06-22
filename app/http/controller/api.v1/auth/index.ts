@@ -10,4 +10,4 @@ authRouter.post('/', ValidationMiddleware.validateUserLogin(), user_controller.l
 
 authRouter.post('/verify', ValidationMiddleware.validateUserVerify(), user_controller.verify);
 
-authRouter.post('/logout', AuthMiddleware.isAuthenticated(), user_controller.logout)
+authRouter.delete('/logout', AuthMiddleware.isAuthenticated(), user_controller.logout)

@@ -7,5 +7,5 @@ export interface ILocation{
     address: string;
     lat: number;
     long: number;
-    event: IEvent[]
+    event?: IEvent[]
 }

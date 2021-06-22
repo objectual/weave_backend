@@ -5,7 +5,7 @@ export class Events {
         try{
             
         }catch(e){
-            Sender.errorSend(res, {success: false, msg: e.messages, status: 500})
+            Sender.errorSend(res, {success: false, msg: e.message, status: 500})
         }
     }
     
@@ -13,7 +13,7 @@ export class Events {
         try{
 
         }catch(e){
-            Sender.errorSend(res, {success: false, msg: e.messages, status: 500})
+            Sender.errorSend(res, {success: false, msg: e.message, status: 500})
         }
     }
     
@@ -21,7 +21,7 @@ export class Events {
         try{
 
         }catch(e){
-            Sender.errorSend(res, {success: false, msg: e.messages, status: 500})
+            Sender.errorSend(res, {success: false, msg: e.message, status: 500})
         }
     }
 }

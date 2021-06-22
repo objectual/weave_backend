@@ -1,14 +1,15 @@
 import express from 'express';
 export const userRouter = express.Router();
 
-import { User } from './user.controller' 
-import { Uploader } from "../../../../constants/uploader"; 
+import { User } from './user.controller'
+import { Uploader } from "../../../../constants/uploader";
 import { ValidationMiddleware } from '../../../middleware/validation';
 import { CacheMiddleware } from '../../../middleware/cache';
+import { AuthMiddleware } from '../../../middleware/auth';
 
 let user_controller = new User();
 
-userRouter.get('/', ValidationMiddleware.blockedUsersList(), CacheMiddleware.userSearch(), user_controller.get)
+userRouter.get('/', AuthMiddleware.isApproved(), ValidationMiddleware.blockedUsersList(), CacheMiddleware.userSearch(), user_controller.get)
 
 userRouter.put('/', ValidationMiddleware.validateUserUpdate(), user_controller.update)
 

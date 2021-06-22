@@ -1,6 +1,6 @@
 "use strict";
 import { PrismaClient } from '@prisma/client';
-import { IEvent, IEventCreate } from '../models/event.model';
+import { IEvent, IEventCreate, IEventUpdate } from '../models/event.model';
 let select = {
     id: true,
     title: true,
@@ -8,7 +8,6 @@ let select = {
     from: true,
     to: true,
     location: true,
-    locationId: true,
     owner: { select: { profile: true } },
     members: { select: { profile: true } },
     createdAt: true,
@@ -27,6 +26,16 @@ export class EventService {
         return new Promise((resolve, reject) => {
             this.prisma.event
                 .create({ data: event, select })
+                .then(event => resolve(event))
+                .catch(error => reject(error))
+                .finally(() => this.prisma.$disconnect())
+        })
+    }
+
+    update(where, event: IEventUpdate): Promise<IEvent> {
+        return new Promise((resolve, reject) => {
+            this.prisma.event
+                .update({ where, data: event, select })
                 .then(event => resolve(event))
                 .catch(error => reject(error))
                 .finally(() => this.prisma.$disconnect())

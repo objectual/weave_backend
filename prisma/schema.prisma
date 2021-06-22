@@ -99,24 +99,26 @@ model BlockedList {
 
 //*************** Event LEVEL ***************//
 model Event {
-  id          String   @id @default(uuid())
-  title       String
-  description String
-  from        DateTime
-  to          DateTime
-  location    Location @relation(fields: [locationId], references: [id])
-  locationId  String
-  owner       User     @relation(name: "EventsOwned", fields: [userId], references: [id])
-  userId      String
-  members     User[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String    @id @default(uuid())
+  title        String
+  description  String
+  from         DateTime
+  to           DateTime
+  owner        User      @relation(name: "EventsOwned", fields: [userId], references: [id])
+  userId       String
+  members      User[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  location     Location? @relation(fields: [locationLat, locationLong], references: [lat, long])
+  locationLat  Float?
+  locationLong Float?
 }
 
 model Location {
-  id      String  @id @default(uuid())
   address String
   lat     Float
   long    Float
   event   Event[]
+
+  @@id([lat, long])
 }

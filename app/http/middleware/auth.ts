@@ -14,7 +14,7 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
             compose()
                 // Attach user to request
                 .use((req, res, next) => {
-                    let token = req.session.auth; 
+                    let token = req.session.auth;
                     if (!token)
                         return Sender.errorSend(res, {
                             success: false,
@@ -62,6 +62,7 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
             compose()
                 .use((req, res, next) => {
                     // This middleware will verify if the jwt is not compromised after user logged out
+                    req.session.cookie.expires = new Date(Date.now() + 48 * 60 * 60 * 1000)
                     req.session.cookie.maxAge = 48 * 60 * 60 * 1000;
                     next();
                 })
@@ -75,19 +76,37 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
                     let myUserService = new UserService();
                     myUserService.findOneAdmin({ id: req.user.id, blocked: false })
                         .then(async user => {
-                                if (user == null) {
-                                    await this.expireAuthToken(req, 10)
-                                    Sender.errorSend(res, {
-                                        success: false,
-                                        msg: "Your account access has been blocked.",
-                                        status: 401,
-                                    });
-                                    throw true;
-                                } else {
-                                    req.user.data = user;
-                                    next();
-                                }
+                            if (user == null) {
+                                await this.expireAuthToken(req, 10)
+                                Sender.errorSend(res, {
+                                    success: false,
+                                    msg: "Your account access has been blocked.",
+                                    status: 401,
+                                });
+                                throw true;
+                            } else {
+                                req.user.data = user;
+                                next();
+                            }
                         });
+                })
+        );
+    }
+
+    isApproved() {
+        return (
+            compose()
+                // Attach user to request
+                .use((req, res, next) => {
+                    if(req.user.data.profile.approved == false){
+                        Sender.errorSend(res, {
+                            success: false,
+                            msg: "Your account details are incomplete. Please update your profile",
+                            raw: { existing: true, approved: false },
+                            status: 401,
+                        });
+                    }
+                    next();
                 })
         );
     }

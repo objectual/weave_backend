@@ -2,6 +2,7 @@
 import Joi from "joi";
 import { IUser, Role } from "../models/user.model";
 import { IFriends } from "../models/connection.model";
+import { IEvent, IEventUpdate } from "../models/event.model";
 interface UserRegister extends IUser {
     email: string;
     password: string;
@@ -31,8 +32,20 @@ interface UserUpdate extends IUser {
 
 interface FriendRequestData extends IUser {
     friend?: IUser['id'];
-    id?: IFriends['id']; 
-    approved?: IFriends['approved']; 
+    id?: IFriends['id'];
+    approved?: IFriends['approved'];
+}
+
+interface EventCreateData extends IEvent {
+    "address": string,
+    "lat": number,
+    "long": number
+}
+
+interface EventUpdateData extends IEventUpdate {
+    "address": string,
+    "lat": number,
+    "long": number
 }
 export class Validator {
     constructor() { }
@@ -135,6 +148,39 @@ export class Validator {
     protected validateUserBlockRequest(data: FriendRequestData) {
         const schema = Joi.object().keys({
             user: Joi.string().required(),
+        });
+        return Joi.validate(data, schema);
+    }
+
+    //************************ VALIDATE EVENT CREATE DATA ***********************//
+    protected validateCreateEvent(data: EventCreateData) {
+        const schema = Joi.object().keys({
+            title: Joi.string().required(),
+            description: Joi.string().required(),
+            from: Joi.string().required(),
+            to: Joi.string().required(),
+            address: Joi.string().required(),
+            lat: Joi.number().required(),
+            long: Joi.number().required(),
+            members: Joi.array().items(Joi.string())
+        });
+        return Joi.validate(data, schema);
+    }
+
+    //************************ VALIDATE EVENT UPDATE DATA ***********************//
+    protected validateUpdateEvent(data: EventUpdateData) {
+        const schema = Joi.object().keys({
+            title: Joi.string(),
+            description: Joi.string(),
+            from: Joi.string(),
+            to: Joi.string(),
+            address: Joi.string(),
+            lat: Joi.number(),
+            long: Joi.number(),
+            members: Joi.object().keys({
+                connect: Joi.array().items({ id: Joi.string() }),
+                disconnect: Joi.array().items({ id: Joi.string() }),
+            })
         });
         return Joi.validate(data, schema);
     }

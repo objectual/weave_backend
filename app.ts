@@ -27,6 +27,7 @@ app.use(session({
     secret: process.env.PASSPHRASE,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     cookie: {
         secure: false, // if true only transmit cookie over https
         httpOnly: true, // if true prevent client side JS from reading the cookie 
