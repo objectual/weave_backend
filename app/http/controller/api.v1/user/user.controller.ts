@@ -34,7 +34,7 @@ export class User {
                     }
                 }
             } else {
-                let query = { blocked: false, profile: { approved: true } }
+                let query = { blocked: false, role: "USER", profile: { approved: true } }
                 if (key != null && key != "") {
                     let orQuery = [
                         { email: { contains: key, mode: "insensitive", } },
@@ -55,7 +55,7 @@ export class User {
                 })
                 users.map(user => userService.redisUpdateUser(user))
                 Sender.send(res, {
-                    success: true, 
+                    success: true,
                     data: user_profiles,
                     raw: "live",
                     page: page,

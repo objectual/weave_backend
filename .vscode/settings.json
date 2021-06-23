@@ -2,5 +2,22 @@
     "cSpell.words": [
         "cloudinary",
         "kqlyxzrz"
-    ]
+    ],
+    "workbench.colorCustomizations": {
+        "activityBar.activeBackground": "#baa8ba",
+        "activityBar.activeBorder": "#f7f7e7",
+        "activityBar.background": "#baa8ba",
+        "activityBar.foreground": "#15202b",
+        "activityBar.inactiveForeground": "#15202b99",
+        "activityBarBadge.background": "#f7f7e7",
+        "activityBarBadge.foreground": "#15202b",
+        "statusBar.background": "#a48ba3",
+        "statusBar.foreground": "#15202b",
+        "statusBarItem.hoverBackground": "#8d6f8c",
+        "titleBar.activeBackground": "#a48ba3",
+        "titleBar.activeForeground": "#15202b",
+        "titleBar.inactiveBackground": "#a48ba399",
+        "titleBar.inactiveForeground": "#15202b99"
+    },
+    "peacock.color": "#a48ba3"
 }

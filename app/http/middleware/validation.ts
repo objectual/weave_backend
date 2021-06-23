@@ -5,6 +5,7 @@ import { ValidateImages } from "../models/images.user.model";
 import { Sender } from "../services/sender.service";
 import * as _ from "lodash"
 import { EventService } from "../services/event.service";
+import { ValidateEvent } from "../models/event.model";
 export const ValidationMiddleware = new class ValidationMiddleware extends Validator {
     constructor() {
         super();
@@ -278,6 +279,13 @@ export const ValidationMiddleware = new class ValidationMiddleware extends Valid
                             Sender.errorSend(res, errors);
                             return;
                         })
+                })
+                .use((req, res, next)=>{ 
+                    const validateEvent = new ValidateEvent();
+                    validateEvent.validate(req.body, {
+                        error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
+                        next: () => next()
+                    })
                 })
         )
     }
