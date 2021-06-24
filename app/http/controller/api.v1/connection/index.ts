@@ -1,24 +1,31 @@
 import express from 'express';
-export const connectionRouter = express.Router(); 
-import { ValidationMiddleware } from '../../../middleware/validation';
+import { ConnectionValidationMiddleware } from '../../../validators/connection.validate';
+const router = express.Router();
 import { Connection } from './connection.controller'
 
-let connection_controller = new Connection();
+class ConnectionRoutes {
+    get routes() {
+        router.get('/friends', new Connection().getFriends)
 
-connectionRouter.get('/friends', connection_controller.getFriends)
+        router.get('/friends/requests', new Connection().getFriendRequests)
 
-connectionRouter.get('/friends/requests', connection_controller.getFriendRequests)
+        router.get('/friends/pending', new Connection().getFriendsPendingApproval)
 
-connectionRouter.get('/friends/pending', connection_controller.getFriendsPendingApproval)
+        router.post('/friends', ConnectionValidationMiddleware.blockedUsersList(), ConnectionValidationMiddleware.validateFriendRequest(), new Connection().sendFriendRequest)
 
-connectionRouter.post('/friends', ValidationMiddleware.blockedUsersList(), ValidationMiddleware.validateFriendRequest(), connection_controller.sendFriendRequest)
+        router.put('/friends/:id', ConnectionValidationMiddleware.validateFriendRequestUpdate(), new Connection().updateFriendRequest)
 
-connectionRouter.put('/friends/:id', ValidationMiddleware.validateFriendRequestUpdate(), connection_controller.updateFriendRequest)
+        router.delete('/friends/:id', new Connection().deleteFriendRequest)
 
-connectionRouter.delete('/friends/:id', connection_controller.deleteFriendRequest)
+        router.get('/blocked', new Connection().getBlockList)
 
-connectionRouter.get('/blocked', connection_controller.getBlockList)
+        router.post('/blocked', ConnectionValidationMiddleware.validateBlockedRequest(), new Connection().blockUser)
 
-connectionRouter.post('/blocked', ValidationMiddleware.validateBlockedRequest(), connection_controller.blockUser)
+        router.delete('/blocked/:id', new Connection().unblockUser)
 
-connectionRouter.delete('/blocked/:id', connection_controller.unblockUser)
+        return router;
+    }
+}
+
+Object.seal(ConnectionRoutes);
+export = ConnectionRoutes;

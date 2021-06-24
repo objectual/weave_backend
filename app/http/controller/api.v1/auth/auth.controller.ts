@@ -1,9 +1,9 @@
 import * as _ from "lodash";
 import { UserService } from "../../../services/user.service";
 import { AuthService } from "../../../services/auth.service";
-import { IProfileCreate, ValidateProfile } from "../../../models/profile.user.model";
+import { IProfileCreate } from "../../../models/profile.user.model";
 import { Sender } from "../../../services/sender.service";
-import { ValidateUser } from "../../../models/user.model";
+import { ValidateProfile, ValidateUser } from "../../../validators/user.validate";
 export class Authentication {
     login(req, res) {
         try {

@@ -1,23 +1,33 @@
+
 import express from "express";
-import { authRouter } from "../app/http/controller/api.v1/auth";
-import { userRouter } from "../app/http/controller/api.v1/user";
-import { userAdminRouter } from "../app/http/controller/api.v1/user/admin";
-import { connectionRouter } from "../app/http/controller/api.v1/connection";
-import { AuthMiddleware } from "../app/http/middleware/auth";
-import { RoleMiddleware } from "../app/http/middleware/role";
-import { eventsRouter } from "../app/http/controller/api.v1/events";
 const app = express();
 
-app.use("/auth", authRouter);
+import AuthRoutes from "../app/http/controller/api.v1/auth";
+import ConnectionRoutes from "../app/http/controller/api.v1/connection";
+import EventRoutes from "../app/http/controller/api.v1/events";
+import EventAdminRoutes from "../app/http/controller/api.v1/events/admin";
+import UserRoutes from "../app/http/controller/api.v1/user";
+import UserAdminRoutes from "../app/http/controller/api.v1/user/admin";
+import { AuthMiddleware } from "../app/http/middleware/auth";
+import { RoleMiddleware } from "../app/http/middleware/role";
 
-app.use("/users", AuthMiddleware.isAuthenticated(), userRouter);
+class ApiRoutes {
+    get routes(){            
+        app.use("/auth", new AuthRoutes().routes);
 
-app.use("/connections", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), connectionRouter);
+        app.use("/users", AuthMiddleware.isAuthenticated(), new UserRoutes().routes);
 
-app.use("/events", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), eventsRouter);
+        app.use("/connections", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), new ConnectionRoutes().routes);
 
-app.use("/events/admin", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), RoleMiddleware.isAdmin(), connectionRouter);
+        app.use("/events", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), new EventRoutes().routes);
 
-app.use("/users/admin", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), RoleMiddleware.isAdmin(), userAdminRouter);
+        app.use("/events/admin", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), RoleMiddleware.isAdmin(), new EventAdminRoutes().routes);
 
-module.exports = app;
+        app.use("/users/admin", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), RoleMiddleware.isAdmin(), new UserAdminRoutes().routes);
+        return app
+    }
+}
+
+
+Object.seal(ApiRoutes);
+export = ApiRoutes;

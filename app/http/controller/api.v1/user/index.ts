@@ -1,20 +1,26 @@
 import express from 'express';
-export const userRouter = express.Router();
+const router = express.Router();
 
 import { User } from './user.controller'
 import { Uploader } from "../../../../constants/uploader";
-import { ValidationMiddleware } from '../../../middleware/validation';
 import { CacheMiddleware } from '../../../middleware/cache';
 import { AuthMiddleware } from '../../../middleware/auth';
+import { ConnectionValidationMiddleware } from '../../../validators/connection.validate';
+import { UserValidationMiddleware } from '../../../validators/user.validate';
 
-let user_controller = new User();
+class UserRoutes {
+    get routes() { 
+        router.get('/', AuthMiddleware.isApproved(), ConnectionValidationMiddleware.blockedUsersList(), CacheMiddleware.userSearch(), new User().get)
 
-userRouter.get('/', AuthMiddleware.isApproved(), ValidationMiddleware.blockedUsersList(), CacheMiddleware.userSearch(), user_controller.get)
+        router.put('/', UserValidationMiddleware.validateUserUpdate(), new User().update)
 
-userRouter.put('/', ValidationMiddleware.validateUserUpdate(), user_controller.update)
+        router.post('/uploader', UserValidationMiddleware.validateUserImageCount(), Uploader.fields([{ name: "images" }]), new User().uploader)
 
-userRouter.post('/uploader', ValidationMiddleware.validateUserImageCount(), Uploader.fields([{ name: "images" }]), user_controller.uploader)
+        router.delete('/images/remove', new User().imageRemove)
 
-userRouter.delete('/images/remove', user_controller.imageRemove)
-
-userRouter.get('/images/:id', user_controller.getImages)
+        router.get('/images/:id', new User().getImages)
+        return router
+    }
+}
+Object.seal(UserRoutes);
+export = UserRoutes;

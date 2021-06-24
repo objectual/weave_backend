@@ -1,13 +1,19 @@
 import express from 'express';
 import { AuthMiddleware } from '../../../middleware/auth';
-import { ValidationMiddleware } from '../../../middleware/validation';
+import { UserValidationMiddleware } from '../../../validators/user.validate';
 import { Authentication } from './auth.controller'
-export const authRouter = express.Router();
+const router = express.Router();
 
-const user_controller = new Authentication();
+class AuthRoutes {
+    get routes() {
+        router.post('/', UserValidationMiddleware.validateUserLogin(), new Authentication().login);
 
-authRouter.post('/', ValidationMiddleware.validateUserLogin(), user_controller.login);
+        router.post('/verify', UserValidationMiddleware.validateUserVerify(), new Authentication().verify);
 
-authRouter.post('/verify', ValidationMiddleware.validateUserVerify(), user_controller.verify);
+        router.delete('/logout', AuthMiddleware.isAuthenticated(), new Authentication().logout)
+        return router;
+    }
+}
 
-authRouter.delete('/logout', AuthMiddleware.isAuthenticated(), user_controller.logout)
+Object.seal(AuthRoutes);
+export = AuthRoutes;

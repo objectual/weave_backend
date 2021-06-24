@@ -5,7 +5,6 @@
  */
 require('dotenv').config()
 var app = require("../app")
-const config = require("config");
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 import http from 'http';

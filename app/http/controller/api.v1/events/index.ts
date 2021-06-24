@@ -1,14 +1,19 @@
 import express from 'express';
-export const eventsRouter = express.Router(); 
-import { ValidationMiddleware } from '../../../middleware/validation';
+import { EventValidationMiddleware } from '../../../validators/event.validate';
+const router = express.Router();
 import { Events } from './events.controller'
+class EventRoutes {
+    get routes() {
+        router.get('/', new Events().getEvents)
 
-let events_controller = new Events();
+        router.post('/', EventValidationMiddleware.validateEventCreate(), new Events().createEvent)
 
-eventsRouter.get('/', events_controller.getEvents)
+        router.put('/:id', EventValidationMiddleware.validateEventUpdate(), new Events().updateEvent)
 
-eventsRouter.post('/', ValidationMiddleware.blockedUsersList(), ValidationMiddleware.validateEventCreate(), events_controller.createEvent)
+        router.delete('/:id', new Events().deleteEvent)
 
-eventsRouter.put('/:id', ValidationMiddleware.validateEventUpdate(), events_controller.updateEvent)
-
-eventsRouter.delete('/:id', events_controller.deleteEvent)
+        return router;
+    }
+}
+Object.seal(EventRoutes);
+export = EventRoutes;

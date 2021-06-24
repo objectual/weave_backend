@@ -1,12 +1,16 @@
-import express from 'express'; 
-export const eventsRouter = express.Router(); 
-import { ValidationMiddleware } from '../../../../middleware/validation';
+import express from 'express';
+const router = express.Router();
 import { Events } from './events.admin.controller'
 
-let events_controller = new Events();
+class EventAdminRoutes {
+    get routes() {
+        router.get('/', new Events().getEvents)
 
-eventsRouter.get('/', events_controller.getEvents)
+        router.delete('/:id', new Events().deleteEvent)
 
-eventsRouter.put('/:id', ValidationMiddleware.validateFriendRequestUpdate(), events_controller.updateEvent)
+        return router;
+    }
+}
 
-eventsRouter.delete('/:id', events_controller.deleteEvent)
+Object.seal(EventAdminRoutes);
+export = EventAdminRoutes;

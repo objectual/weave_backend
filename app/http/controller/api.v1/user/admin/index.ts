@@ -1,11 +1,18 @@
 import express from 'express';
-export const userAdminRouter = express.Router();
- 
-import { ValidationMiddleware } from '../../../../middleware/validation';
+import { UserValidationMiddleware } from '../../../../validators/user.validate';
+const router = express.Router();
+
 import { User } from './user.admin.controller'
 
-let user_controller = new User();
+class UserAdminRoutes {
+    get routes() {
+        router.get('/', new User().get)
 
-userAdminRouter.get('/', user_controller.get)
+        router.post('/:id', UserValidationMiddleware.validateAdminUserUpdate(), new User().update);
 
-userAdminRouter.post('/:id', ValidationMiddleware.validateAdminUserUpdate(), user_controller.update);
+        return router;
+    }
+}
+
+Object.seal(UserAdminRoutes);
+export = UserAdminRoutes;

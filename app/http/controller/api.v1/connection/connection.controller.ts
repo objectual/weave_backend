@@ -57,18 +57,24 @@ export class Connection {
         try {
             req.body.approved = req.body.approved == "true" ? true : false;
             const friendsService = new FriendsService();
-            // Approve only requests made by the OTHER USER
             let getRequest = await friendsService.findOne({ id: req.params.id, friendId: req.user.id })
             if (getRequest == null) {
                 Sender.errorSend(res, { success: false, status: 409, msg: "Something impossible happened" })
                 return;
             }
-            if (getRequest.approved == req.body.approved) {
-                Sender.errorSend(res, { success: false, status: 409, msg: "Action already taken" })
-                return;
+            if (req.body.approved == true) {
+                // Approve only requests made by the OTHER USER
+                if (getRequest.approved == true) {
+                    Sender.errorSend(res, { success: false, status: 409, msg: "Request already approved" })
+                    return;
+                }
+                let updateRequest = await friendsService.findOneAndUpdate({ id: req.params.id }, { approved: req.body.approved })
+                Sender.send(res, { success: true, status: 200, msg: "Friend request updated", data: updateRequest })
+            } else {
+                // Deleting request; Also checking if this request was meant for this user 
+                let deleteFriend = await friendsService.delete({ id: req.params.id })
+                Sender.send(res, { success: true, data: deleteFriend, msg: "Friend request removed", status: 200 })
             }
-            let updateRequest = await friendsService.findOneAndUpdate({ id: req.params.id }, { approved: req.body.approved })
-            Sender.send(res, { success: true, status: 200, msg: "Friend request updated", data: updateRequest })
         } catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
@@ -77,7 +83,8 @@ export class Connection {
         try {
             const friendService = new FriendsService();
             let getRequest = await friendService.findOne({ id: req.params.id })
-            if (getRequest == null || (getRequest.user.profile.userId != req.user.id && getRequest.user.profile.userId != req.user.id)) {
+            if (getRequest == null || (getRequest.user.profile.userId != req.user.id && getRequest.friend.profile.userId != req.user.id)) {
+                // The request is either non existent or (the user trying to delete this request did not generate the request or this request was not meant for this user ) 
                 Sender.errorSend(res, { success: false, status: 409, msg: "Something impossible happened" })
                 return;
             }
