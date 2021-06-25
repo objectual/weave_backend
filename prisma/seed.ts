@@ -107,7 +107,46 @@ async function main() {
         },
         include: { profile: true },
     })
-    console.log({ Weave_Admin, Suzy_Adams, Hannah_Olive, Jimmy_Harper })
+    console.log("Users Created: ", { Weave_Admin, Suzy_Adams, Hannah_Olive, Jimmy_Harper })
+    const Jimmy_Harper_Connect_Suzy_Adams = await prisma.friends.upsert({
+        where: { id: "8497dc70-f1c7-4b7f-922f-4c7ca47444c3" },
+        update: {},
+        create: {
+            "id": "8497dc70-f1c7-4b7f-922f-4c7ca47444c3",
+            "userId": "378e5609-1ad7-44e2-acf2-be1cb4028a4a",
+            "friendId": "9b4b4f2c-7748-4214-8708-96ba9ab30957",
+            "approved": true,
+            "createdAt": "2021-06-25T12:20:25.799Z",
+            "updatedAt": "2021-06-25T12:20:25.800Z"
+        },
+        include: { user: true, friend: true },
+    })
+    const Hannah_Olive_Connect_Suzy_Adams = await prisma.friends.upsert({
+        where: { id: "17dac59e-c611-4c18-a137-c25c18cf61dd" },
+        update: {},
+        create: {
+            "id": "17dac59e-c611-4c18-a137-c25c18cf61dd",
+            "userId": "e031e3b2-bd0d-455a-b08a-3a21271be74e",
+            "friendId": "9b4b4f2c-7748-4214-8708-96ba9ab30957",
+            "approved": true,
+            "createdAt": "2021-06-25T12:20:25.799Z",
+            "updatedAt": "2021-06-25T12:20:25.800Z"
+        },
+        include: { user: true, friend: true },
+    })
+
+    const Hannah_Olive_Blocks_Jimmy_Harper = await prisma.blockedList.upsert({
+        where: { id: "3ac71834-45a6-46fc-8985-60709bcd8c5a" },
+        update: {},
+        create: {
+            "id": "3ac71834-45a6-46fc-8985-60709bcd8c5a",
+            "userId": "e031e3b2-bd0d-455a-b08a-3a21271be74e",
+            "blockedId": "9b4b4f2c-7748-4214-8708-96ba9ab30957",
+            "createdAt": "2021-06-25T12:20:25.799Z",
+        },
+        include: { user: true, blocked: true },
+    })
+    console.log("Connections Created", `Jimmy -> Suzy <- Hannah -x> Jimmy`, { Jimmy_Harper_Connect_Suzy_Adams, Hannah_Olive_Connect_Suzy_Adams, Hannah_Olive_Blocks_Jimmy_Harper })
 }
 main()
     .catch(e => {

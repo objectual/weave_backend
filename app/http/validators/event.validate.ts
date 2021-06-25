@@ -1,5 +1,6 @@
 "use strict";
 import Joi from "joi";
+import * as _ from "lodash";
 import moment from 'moment';
 import compose from "composable-middleware"
 import { IEvent, IEventUpdate } from "../models/event.model";
@@ -61,6 +62,7 @@ class ValidateEvent {
         this.prisma = new PrismaClient();
     }
     async validate(members: IUser['id'][], userId: IUser['id'], { error, next }) {
+        console.log(members)
         await Promise.all(members.map(async friendId => {
             return new Promise(async (resolve, reject) => {
                 let friendCheck = await this.alreadyFriends(friendId, userId, 0)
@@ -77,10 +79,10 @@ class ValidateEvent {
         })
     }
 
-    async validateDate(to: string, from: string, { error, next }) {
-        if (moment(from).diff(moment(), 'days') < 0) {
+    async validateDate(to: string, from: string, { error, next }) { 
+        if (!moment(from).isSameOrAfter(moment())) {
             return error("Event start date cannot be before today")
-        } else if (moment(to).diff(moment(from), 'days') < 0) {
+        } else if (!moment(to).isSameOrAfter(moment(from))) {
             return error("Event end date cannot be before start date")
         } else {
             next();
@@ -125,6 +127,9 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                 })
                 .use((req, res, next) => {
                     if (req.body.members.length > 0) {
+                        req.body.members = _.uniq(req.body.members); // Only unique IDS 
+                        req.body.members = _.reject(req.body.members, obj => obj == req.user.id); // Remove user ID from members
+                        console.log(req.body.members)
                         const validateEvent = new ValidateEvent();
                         validateEvent.validate(req.body.members, req.user.id, {
                             error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
@@ -134,14 +139,14 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                         next()
                     }
                 }).use((req, res, next) => {
-                    if (req.body.start != null && req.body.end != null) {
+                    if (req.body.from != null && req.body.to != null) {
                         const validateEvent = new ValidateEvent();
-                        validateEvent.validateDate(req.body.to, req.user.from, {
+                        validateEvent.validateDate(req.body.to, req.body.from, {
                             error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                             next: () => next()
                         })
                     } else {
-                        next()
+                        Sender.errorSend(res, { success: false, status: 400, msg: "Event dates required" });
                     }
                 })
         )
@@ -165,6 +170,21 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                             return;
                         })
                 })
+                // Need to check if the members connect and disconnect are already in the event or not
+                .use((req, res, next) => {
+                    if (req.body.members.connect.id.length > 0) {
+                        req.body.members.connect.id= _.uniq(req.body.members.connect.id); // Only unique IDS 
+                        req.body.members.connect.id = _.reject(req.body.members.connect.id, obj => obj == req.user.id); // Remove user ID from members
+                        console.log(req.body.members.connect.id)
+                        const validateEvent = new ValidateEvent();
+                        validateEvent.validate(req.body.members.connect.id, req.user.id, {
+                            error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
+                            next: () => next()
+                        })
+                    } else {
+                        next()
+                    }
+                })
                 .use(async (req, res, next) => {
                     const eventService = new EventService()
                     let event = await eventService.findOne({ id: req.params.id, userId: req.user.id })
@@ -173,9 +193,9 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                     }
                     next();
                 }).use((req, res, next) => {
-                    if (req.body.start != null && req.body.end != null) {
+                    if (req.body.from != null && req.body.to != null) {
                         const validateEvent = new ValidateEvent();
-                        validateEvent.validateDate(req.body.to, req.user.from, {
+                        validateEvent.validateDate(req.body.to, req.body.from, {
                             error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                             next: () => next()
                         })
