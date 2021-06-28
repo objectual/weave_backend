@@ -1,3 +1,5 @@
+import express from "express";
+
 interface ISender {
     errorSend: (res, data: ErrorObject) => {};
     send: (res, data: SuccessObject) => {}
@@ -34,12 +36,12 @@ enum ErrorCodes {
 }
 
 export const Sender = new class Sender implements ISender {
-    errorSend(res: any, data: ErrorObject) {
+    errorSend(res: express.Response, data: ErrorObject) {
         console.error("ERROR", data)
         return res.status(data.status).send(data);
     }
 
-    send(res: any, data: SuccessObject) {
+    send(res: express.Response, data: SuccessObject) {
         return res.status(data.status).send(data);
     }
 }

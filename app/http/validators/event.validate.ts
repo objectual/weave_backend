@@ -42,14 +42,14 @@ class Validator {
         const schema = Joi.object().keys({
             title: Joi.string(),
             description: Joi.string(),
-            from: Joi.string(),
-            to: Joi.string(),
-            address: Joi.string(),
-            lat: Joi.number(),
-            long: Joi.number(),
+            from: Joi.string().required(),
+            to: Joi.string().required(),
+            address: Joi.string().required(),
+            lat: Joi.number().required(),
+            long: Joi.number().required(),
             members: Joi.object().keys({
-                connect: Joi.array().items({ id: Joi.string() }),
-                disconnect: Joi.array().items({ id: Joi.string() }),
+                connect: Joi.object().keys({ id: Joi.array().items(Joi.string()) }),
+                disconnect: Joi.object().keys({ id: Joi.array().items(Joi.string()) }),
             })
         });
         return Joi.validate(data, schema);
@@ -79,7 +79,7 @@ class ValidateEvent {
         })
     }
 
-    async validateDate(to: string, from: string, { error, next }) { 
+    async validateDate(to: string, from: string, { error, next }) {
         if (!moment(from).isSameOrAfter(moment())) {
             return error("Event start date cannot be before today")
         } else if (!moment(to).isSameOrAfter(moment(from))) {
@@ -170,10 +170,19 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                             return;
                         })
                 })
-                // Need to check if the members connect and disconnect are already in the event or not
+                .use(async (req, res, next) => {
+                    const eventService = new EventService()
+                    let event = await eventService.findOne({ id: req.params.id, userId: req.user.id })
+                    if (event == null) {
+                        Sender.errorSend(res, { success: false, status: 409, msg: "Only event owner can update event" })
+                    }else{
+                        req.event = event
+                        next();
+                    }
+                })
                 .use((req, res, next) => {
-                    if (req.body.members.connect.id.length > 0) {
-                        req.body.members.connect.id= _.uniq(req.body.members.connect.id); // Only unique IDS 
+                    if (req.body.members != null && req.body.members.connect != null && req.body.members.connect.id.length > 0) {
+                        req.body.members.connect.id = _.uniq(req.body.members.connect.id); // Only unique IDS 
                         req.body.members.connect.id = _.reject(req.body.members.connect.id, obj => obj == req.user.id); // Remove user ID from members
                         console.log(req.body.members.connect.id)
                         const validateEvent = new ValidateEvent();
@@ -181,18 +190,24 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                             error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                             next: () => next()
                         })
-                    } else {
+                    } else if (req.body.members != null && req.body.members.disconnect != null && req.body.members.disconnect.id.length > 0) {
+                        req.body.members.disconnect.id = _.uniq(req.body.members.disconnect.id); // Only unique IDS 
+                        req.body.members.disconnect.id = _.reject(req.body.members.disconnect.id, obj => obj == req.user.id); // Remove user ID from members
+                        console.log(req.event)
+                        for (let index = 0; index < req.body.members.disconnect.id.length; index++) {
+                            const id = req.body.members.disconnect.id[index];
+                            if(_.indexOf(req.event.members, function(o){return o.profile.userId == id})==-1){
+                                Sender.errorSend(res, {success: false, status: 400, msg: "There was an error removing an event member"})
+                                break;
+                            }
+                        }
+                        next();
+                    }else{
                         next()
                     }
                 })
-                .use(async (req, res, next) => {
-                    const eventService = new EventService()
-                    let event = await eventService.findOne({ id: req.params.id, userId: req.user.id })
-                    if (event == null) {
-                        Sender.errorSend(res, { success: false, status: 409, msg: "Only event owner can update event" })
-                    }
-                    next();
-                }).use((req, res, next) => {
+                // Need to check if the members connect and disconnect are already in the event or not
+                .use((req, res, next) => {
                     if (req.body.from != null && req.body.to != null) {
                         const validateEvent = new ValidateEvent();
                         validateEvent.validateDate(req.body.to, req.body.from, {
