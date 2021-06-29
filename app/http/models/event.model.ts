@@ -32,7 +32,7 @@ export interface IEventUpdate {
     description: string;
     from: Date;
     to: Date;
-    location: { connectOrCreate: { create: ILocation, where: { lat_long: { lat: number, long: number } } } };
-    members: { connect: { id: IUser['id'] }[], disconnect: { id: IUser['id'] }[] };
+    location?: { connectOrCreate: { create: ILocation, where: { lat_long: { lat: number, long: number } } } };
+    members?: { connect?: { id: IUser['id'] }[], disconnect?: { id: IUser['id'] }[] };
 }
  

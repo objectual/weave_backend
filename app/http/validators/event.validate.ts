@@ -175,7 +175,7 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                     let event = await eventService.findOne({ id: req.params.id, userId: req.user.id })
                     if (event == null) {
                         Sender.errorSend(res, { success: false, status: 409, msg: "Only event owner can update event" })
-                    }else{
+                    } else {
                         req.event = event
                         next();
                     }
@@ -193,16 +193,19 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                     } else if (req.body.members != null && req.body.members.disconnect != null && req.body.members.disconnect.id.length > 0) {
                         req.body.members.disconnect.id = _.uniq(req.body.members.disconnect.id); // Only unique IDS 
                         req.body.members.disconnect.id = _.reject(req.body.members.disconnect.id, obj => obj == req.user.id); // Remove user ID from members
-                        console.log(req.event)
-                        for (let index = 0; index < req.body.members.disconnect.id.length; index++) {
+                        let index = 0
+                        for (; index < req.body.members.disconnect.id.length; index++) {
                             const id = req.body.members.disconnect.id[index];
-                            if(_.indexOf(req.event.members, function(o){return o.profile.userId == id})==-1){
-                                Sender.errorSend(res, {success: false, status: 400, msg: "There was an error removing an event member"})
+                            console.log(_.some(req.event.members, { profile: { userId: id } }), id)
+                            if (_.some(req.event.members, { profile: { userId: id } }) == false) {
+                                Sender.errorSend(res, { success: false, status: 400, msg: "There was an error removing an event member" })
                                 break;
                             }
                         }
-                        next();
-                    }else{
+                        if(index == req.body.members.disconnect.id.length){
+                            next();
+                        }
+                    } else {
                         next()
                     }
                 })

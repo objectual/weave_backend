@@ -1,20 +1,20 @@
 import jwt from "jsonwebtoken";
 import compose from "composable-middleware"
 import fs from "fs"
+import {Request, Response} from "express"
 import moment from "../../modules/moment"
-import { UserService } from "../services/user.service";
-import { RedisService } from "../../cache/redis.service";
+import { UserService } from "../services/user.service"; 
 import { Sender } from "../services/sender.service";
 
-var publicKEY = fs.readFileSync("config/cert/accessToken.pub", "utf8");
+const publicKEY = fs.readFileSync("config/cert/accessToken.pub", "utf8");
 
 export const AuthMiddleware = new class AuthenticationMiddleware {
     isAuthenticated() {
         return (
             compose()
                 // Attach user to request
-                .use((req, res, next) => {
-                    let token = req.session.auth;
+                .use((req:Request, res:Response, next) => {
+                    let token = req['session'].auth;
                     if (!token)
                         return Sender.errorSend(res, {
                             success: false,
@@ -45,8 +45,8 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
                             return;
                         }
                         var decoded = jwt.verify(token, publicKEY, verifyOptions);
-                        req.user = decoded;
-                        req.auth = token;
+                        req['user'] = decoded;
+                        req['auth'] = token;
                         next();
                     } catch (ex) {
                         console.log("exception: " + ex);
@@ -60,10 +60,10 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
     private refreshAuthToken() {
         return (
             compose()
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     // This middleware will verify if the jwt is not compromised after user logged out
-                    req.session.cookie.expires = new Date(Date.now() + 48 * 60 * 60 * 1000)
-                    req.session.cookie.maxAge = 48 * 60 * 60 * 1000;
+                    req['session'].cookie.expires = new Date(Date.now() + 48 * 60 * 60 * 1000)
+                    req['session'].cookie.maxAge = 48 * 60 * 60 * 1000;
                     next();
                 })
         )
@@ -72,9 +72,9 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
         return (
             compose()
                 // Attach user to request
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     let myUserService = new UserService();
-                    myUserService.findOneAdmin({ id: req.user.id, blocked: false })
+                    myUserService.findOneAdmin({ id: req['user'].id, blocked: false })
                         .then(async user => {
                             if (user == null) {
                                 await this.expireAuthToken(req, 10)
@@ -85,7 +85,7 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
                                 });
                                 throw true;
                             } else {
-                                req.user.data = user;
+                                req['user'].data = user;
                                 next();
                             }
                         });
@@ -97,8 +97,8 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
         return (
             compose()
                 // Attach user to request
-                .use((req, res, next) => {
-                    if(req.user.data.profile.approved == false){
+                .use((req:Request, res:Response, next) => {
+                    if(req['user'].data.profile.approved == false){
                         Sender.errorSend(res, {
                             success: false,
                             msg: "Your account details are incomplete. Please update your profile",

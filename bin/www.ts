@@ -34,7 +34,7 @@ app.use(function (err, req, res, next) {
  * Create HTTP server.
  */
 var server = http.createServer(app);
-
+require("../socks")(server) // Connecting all socks to app
 /**
  * Listen on provided port, on all network interfaces.
  */

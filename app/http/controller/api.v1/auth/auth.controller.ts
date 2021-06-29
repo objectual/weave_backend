@@ -1,11 +1,12 @@
 import * as _ from "lodash";
+import { Request, Response } from "express"
 import { UserService } from "../../../services/user.service";
 import { AuthService } from "../../../services/auth.service";
 import { IProfileCreate } from "../../../models/profile.user.model";
 import { Sender } from "../../../services/sender.service";
 import { ValidateProfile, ValidateUser } from "../../../validators/user.validate";
 export class Authentication {
-    login(req, res) {
+    login(req: Request, res: Response) {
         try {
             let { phoneNo } = req.body;
             const userService = new UserService();
@@ -19,8 +20,10 @@ export class Authentication {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-
-    async verify(req, res) {
+    jwt(req: Request, res: Response) {
+        Sender.send(res, { success: true, status: 200, data: req['session'].auth })
+    }
+    async verify(req: Request, res: Response) {
         try {
             const userService = new UserService();
             const profileValidateService = new ValidateProfile();
@@ -55,7 +58,7 @@ export class Authentication {
                         next: async uniqueGCM => {
                             let token = await AuthService.generateAuthToken({ id: user.id, role: user.role })
                             // myUserService.redisSetUserData(token, moment(moment().add(48, "hours")).fromNow_seconds())
-                            req.session.auth = token;
+                            req['session'].auth = token;
                             if (!uniqueGCM) {
                                 user = await userService.findOneAndUpdate(
                                     { id: user.id },
@@ -99,14 +102,14 @@ export class Authentication {
         }
     }
 
-    async logout(req, res) {
+    async logout(req: Request, res: Response) {
         try {
-            const userService = new UserService(); 
+            const userService = new UserService();
             userService.findOneAndUpdate(
-                { id: req.user.id },
+                { id: req['user'].id },
                 { gcm: { deleteMany: [{ id: req.body.gcm_id }] }, }
             ).then((_user) => {
-                req.session.cookie.maxAge = 10;
+                req['session'].cookie.maxAge = 10;
                 Sender.send(res, { success: true, msg: "Logged out successfully", status: 200 });
             }).catch((error) => {
                 Sender.errorSend(res, { success: false, msg: error.message, status: 500 });

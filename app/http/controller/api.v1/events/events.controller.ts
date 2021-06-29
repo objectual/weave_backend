@@ -59,22 +59,22 @@ export class Events {
                 lat: req.body.lat,
                 long: req.body.long,
             }
-            let body: IEventUpdate = {
+            let body:IEventUpdate = {
                 title: req.body.title,
                 description: req.body.description,
                 from: new Date(req.body.from),
                 to: new Date(req.body.to),
                 location: { connectOrCreate: { create: location, where: { lat_long: { lat: location.lat, long: location.long } } } },
-                members: { connect: null, disconnect: null },
+                members: {},
             }
             if (req.body.members != null && req.body.members.connect != null && req.body.members.connect.id.length > 0) {
-                body.members.connect = req.body.members.connect.id.map(x => { return { id: x } })
+                body.members['connect'] = req.body.members.connect.id.map(x => { return { id: x } })
             } else if (req.body.members != null && req.body.members.disconnect != null && req.body.members.disconnect.id.length > 0) {
-                body.members.disconnect = req.body.members.disconnect.id.map(x => { return { id: x } })
+                body.members['disconnect'] = req.body.members.disconnect.id.map(x => { return { id: x } })
             }
             console.log(body)
             const eventService = new EventService();
-            let event = await eventService.update({ id: req.params.id, userId: req.user.id }, body);
+            let event = await eventService.update({ id: req.params.id }, body);
             Sender.send(res, { success: true, data: event, status: 201, msg: "Event updated" })
         } catch (e) {
             Sender.errorSend(res, { success: false, msg: e.message, status: 500 })

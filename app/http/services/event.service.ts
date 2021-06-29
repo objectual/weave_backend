@@ -21,6 +21,7 @@ export class EventService {
     private prisma;
     constructor() {
         this.prisma = new PrismaClient();
+        // this.prisma.event.update({where: {id: "6ffcbdce-d4cc-4371-95ac-543efbccd090"}, data: {members: {disconnect: [{id: ""}]}}})
     }
     create(event: IEventCreate): Promise<IEvent> {
         return new Promise((resolve, reject) => {

@@ -8,6 +8,8 @@ class AuthRoutes {
     get routes() {
         router.post('/', UserValidationMiddleware.validateUserLogin(), new Authentication().login);
 
+        router.get('/jwt', AuthMiddleware.isAuthenticated(), new Authentication().jwt);
+
         router.post('/verify', UserValidationMiddleware.validateUserVerify(), new Authentication().verify);
 
         router.delete('/logout', AuthMiddleware.isAuthenticated(), new Authentication().logout)

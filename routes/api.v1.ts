@@ -6,6 +6,7 @@ import AuthRoutes from "../app/http/controller/api.v1/auth";
 import ConnectionRoutes from "../app/http/controller/api.v1/connection";
 import EventRoutes from "../app/http/controller/api.v1/events";
 import EventAdminRoutes from "../app/http/controller/api.v1/events/admin";
+import ShareRoutes from "../app/http/controller/api.v1/share";
 import UserRoutes from "../app/http/controller/api.v1/user";
 import UserAdminRoutes from "../app/http/controller/api.v1/user/admin";
 import { AuthMiddleware } from "../app/http/middleware/auth";
@@ -20,6 +21,8 @@ class ApiRoutes {
         app.use("/connections", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), new ConnectionRoutes().routes);
 
         app.use("/events", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), new EventRoutes().routes);
+        
+        app.use("/share", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), new ShareRoutes().routes);
 
         app.use("/events/admin", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), RoleMiddleware.isAdmin(), new EventAdminRoutes().routes);
 

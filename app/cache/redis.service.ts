@@ -5,7 +5,7 @@ const redisScan = require('node-redis-scan');
 let client: any;
 let scanner: any;
 export const RedisService = new class RedisService {
-    connectCache(): any {
+    connectCache(): createClient {
         // console.log("❗ Service Connecting to Redis...")
         let origin = {}
         if (process.env.NODE_ENV == "production") {
