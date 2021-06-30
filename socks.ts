@@ -27,5 +27,14 @@ module.exports = function (server) {
         socket.on('disconnect', () => {
             console.log(`disconnected: ${user.profile.firstName} ${user.profile.lastName}`, socket.id)
         })
+
+        socket.on("unauthorized", function (error) {
+            console.log(error)
+            // this should now fire
+            if (error.data.type == "UnauthorizedError" || error.data.code == "invalid_token") {
+                console.log("Unauthorized access");
+                process.exit(1)
+            }
+        });
     });
 }

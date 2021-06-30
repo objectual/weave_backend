@@ -34,5 +34,5 @@ function socketListeners() {
     });
 }
 
-// node .\locationCheck.js --user_id=1 --lat=20 --long=23
+// node .\locationCheck.js --user_id=1 --lat=20 --long=23 --jwt=<JWT FROM SERVER>
 __main__(args['--user_id'], args['--lat'], args['--long'])

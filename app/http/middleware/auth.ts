@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import compose from "composable-middleware"
 import fs from "fs"
-import {Request, Response} from "express"
+import { Request, Response } from "express"
 import moment from "../../modules/moment"
-import { UserService } from "../services/user.service"; 
+import { UserService } from "../services/user.service";
 import { Sender } from "../services/sender.service";
 
 const publicKEY = fs.readFileSync("config/cert/accessToken.pub", "utf8");
@@ -13,16 +13,16 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
         return (
             compose()
                 // Attach user to request
-                .use((req:Request, res:Response, next) => {
-                    let token = req['session'].auth;
-                    if (!token)
-                        return Sender.errorSend(res, {
-                            success: false,
-                            msg: "Access Denied.",
-                            status: 401,
-                        });
+                .use((req: Request, res: Response, next) => {
                     // Remove Bearer from string
                     try {
+                        let token = req['session'].auth;
+                        if (!token)
+                            return Sender.errorSend(res, {
+                                success: false,
+                                msg: "Access Denied.",
+                                status: 401,
+                            });
                         var i = process.env.ISSUER_NAME;
                         var s = process.env.SIGNED_BY_EMAIL;
                         var a = process.env.AUDIENCE_SITE;
@@ -60,7 +60,7 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
     private refreshAuthToken() {
         return (
             compose()
-                .use((req:Request, res:Response, next) => {
+                .use((req: Request, res: Response, next) => {
                     // This middleware will verify if the jwt is not compromised after user logged out
                     req['session'].cookie.expires = new Date(Date.now() + 48 * 60 * 60 * 1000)
                     req['session'].cookie.maxAge = 48 * 60 * 60 * 1000;
@@ -72,7 +72,7 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
         return (
             compose()
                 // Attach user to request
-                .use((req:Request, res:Response, next) => {
+                .use((req: Request, res: Response, next) => {
                     let myUserService = new UserService();
                     myUserService.findOneAdmin({ id: req['user'].id, blocked: false })
                         .then(async user => {
@@ -97,8 +97,8 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
         return (
             compose()
                 // Attach user to request
-                .use((req:Request, res:Response, next) => {
-                    if(req['user'].data.profile.approved == false){
+                .use((req: Request, res: Response, next) => {
+                    if (req['user'].data.profile.approved == false) {
                         Sender.errorSend(res, {
                             success: false,
                             msg: "Your account details are incomplete. Please update your profile",
