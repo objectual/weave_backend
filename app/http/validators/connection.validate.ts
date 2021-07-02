@@ -74,7 +74,7 @@ class ValidateFriends {
     }
 }
 
-class ValidateBlocked {
+export class ValidateBlocked {
     private prisma;
     constructor() {
         this.prisma = new PrismaClient();

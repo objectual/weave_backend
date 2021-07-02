@@ -11,6 +11,8 @@ import { UserValidationMiddleware } from '../../../validators/user.validate';
 class UserRoutes {
     get routes() { 
         router.get('/', AuthMiddleware.isApproved(), ConnectionValidationMiddleware.blockedUsersList(), CacheMiddleware.userSearch(), new User().get)
+        
+        // router.get('/map', AuthMiddleware.isApproved(), ConnectionValidationMiddleware.blockedUsersList(), new User().getMap)
 
         router.put('/', UserValidationMiddleware.validateUserUpdate(), new User().update)
 

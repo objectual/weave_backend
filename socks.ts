@@ -3,7 +3,8 @@ import fs from "fs";
 const socketioJwt = require('socketio-jwt');
 const publicKEY = fs.readFileSync("config/cert/accessToken.pub", "utf8");
 import { LocationSockets } from "./sockets/location.socket";
-import { UserService } from "./app/http/services/user.service";
+import { ResponseSockets } from "./sockets/response.socket";
+import { userBlockedListConfigure, userConfigure } from "./sockets/sockets.conf";
 
 module.exports = function (server) {
     const io = new Server(server)
@@ -16,25 +17,22 @@ module.exports = function (server) {
     }));
 
     io.on('connect', async (socket) => {
-        //this socket is authenticated, we are good to handle more events from it.
-        const userService = new UserService()
-        let user = await userService.findOneAdmin({ id: socket['decoded_token'].id, blocked: false })
-        console.log(`connected: ${user.profile.firstName} ${user.profile.lastName}`, socket.id)
-        socket.emit('message', { text: `Welcome to iωeave, ${user.profile.firstName} ${user.profile.lastName}`, time: Date.now() });
+        socket['user'] = await userConfigure(socket).catch(msg => new ResponseSockets(socket).error(msg, null))
+        const { blockedByMe, blockedByOthers } = await userBlockedListConfigure(socket).catch(msg => new ResponseSockets(socket).error(msg, null))
+        socket['blockedByMe'] = blockedByMe
+        socket['blockedByOthers'] = blockedByOthers
 
+        console.log(`connected: ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, socket.id)
+
+        socket.emit('authorized', { text: `Welcome to iωeave, ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, data: { 
+            handshake: true, user: socket['user'], blockedByMe:socket['blockedByMe'], blockedByOthers:socket['blockedByOthers'] 
+        }, time: Date.now() });
+
+        //Initializing Location Routes
         new LocationSockets(socket).routes
 
         socket.on('disconnect', () => {
-            console.log(`disconnected: ${user.profile.firstName} ${user.profile.lastName}`, socket.id)
+            console.log(`disconnected: ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, socket.id)
         })
-
-        socket.on("unauthorized", function (error) {
-            console.log(error)
-            // this should now fire
-            if (error.data.type == "UnauthorizedError" || error.data.code == "invalid_token") {
-                console.log("Unauthorized access");
-                process.exit(1)
-            }
-        });
     });
 }

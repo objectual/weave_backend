@@ -66,11 +66,11 @@ export const RedisService = new class RedisService {
 
     searchData(pattern: string): Promise<any[]> {
         return new Promise(async (resolve, reject) => {
-            try { 
+            try {
                 scanner = new redisScan(client)
                 scanner.scan(pattern, async (err, matchingKeys) => {
                     if (err) reject(err);
-                    Promise.all(matchingKeys.map(key => { 
+                    Promise.all(matchingKeys.map(key => {
                         return new Promise((resolve, reject) => {
                             try {
                                 this.getData(`${key}`).then(data => {
@@ -98,6 +98,22 @@ export const RedisService = new class RedisService {
                 reject(error.message);
             }
         });
+    }
+
+    searchLocationKeys(pattern: string): Promise<any[]> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                scanner = new redisScan(client)
+                scanner.scan(pattern, async (err, matchingKeys) => {
+                    if (err) {
+                        reject(err)
+                    }
+                    resolve(matchingKeys);
+                });
+            } catch (e) {
+                reject(e.message);
+            }
+        })
     }
 
     setData(data: any, key: string, exp: number = 3600) {

@@ -28,7 +28,7 @@ function __main__(user_id) {
                 console.log("Connection Authorized: ", message)
                 socketListeners()
                 if (message.data.handshake == true) {
-                    startLocationUpdating(user_id)
+                    startNearbyUsers(user_id)
                 }
             });
         });
@@ -39,19 +39,18 @@ function __main__(user_id) {
 }
 
 const P = {
-    longitude: 67.0600895, latitude: 24.9263031
+    longitude: 24.925467, latitude: 67.059955
 }
 const R = 1000 //meters
-function startLocationUpdating(user_id) {
+function startNearbyUsers(user_id) {
     console.log("Location updater started...")
-    setInterval(() => {
-        let { longitude, latitude } = randomLocation.randomCircumferencePoint(P, R);
-        socket.emit('location-update', { user_id, lat: latitude, long: longitude }, (error) => {
-            if (error) {
-                console.log(error);
-            }
-        });
-    }, 100 * 1000) //sec to ms
+    let { longitude, latitude } = randomLocation.randomCircumferencePoint(P, R);
+    socket.emit('location-users', { user_id }, (error) => {
+        if (error) {
+            console.log(error);
+        }
+        process.exit(1)
+    });
 }
 function socketListeners() {
     console.log("Messages listener attached")
