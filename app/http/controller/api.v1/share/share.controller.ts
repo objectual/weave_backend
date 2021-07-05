@@ -1,6 +1,7 @@
 import { Request, Response } from "express"
 import { Sender } from "../../../services/sender.service"
 import { UserService } from "../../../services/user.service"
+
 export class Share {
     async user(req: Request, res: Response) {
         try {

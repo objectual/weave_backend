@@ -2,8 +2,10 @@
 
 import { RedisService } from "./redis.service";
 import * as _  from 'lodash';
+import { Request, Response } from "express"
+
 export class Redis {
-    async getKeys(req, res) {
+    async getKeys(req:Request, res:Response) {
         try {
             RedisService.getRedisKeys()
                 .then((data) => {
@@ -14,7 +16,7 @@ export class Redis {
             res.send({ success: false, message: error.message });
         }
     };
-    async flushdb(req, res) {
+    async flushdb(req:Request, res:Response) {
         try {
             if (req.body.pass == null) {
                 res.status(401).send({ success: false, message: "Missing credentials" })
@@ -33,7 +35,7 @@ export class Redis {
             res.send({ success: false, message: error.message });
         }
     };
-    async flushAuth(req, res) {
+    async flushAuth(req:Request, res:Response) {
         try {
     
             if (req.body.pass == null || req.body.key == null) {

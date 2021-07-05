@@ -2,6 +2,7 @@ import compose from "composable-middleware"
 import fs from 'fs';
 import path from 'path'; 
 import { Sender } from "../http/services/sender.service";
+import { Request, Response } from "express"
 
 // This implementation requires busboy-body-parser initialized in app
 interface IFields {
@@ -12,13 +13,13 @@ export class Uploader {
     public static fields(names: IFields[]) {
         return (
             compose()
-                .use((req, res, next) => {
-                    if (req.files == null) { next(); } else {
+                .use((req:Request, res:Response, next) => {
+                    if (req['files'] == null) { next(); } else {
                         names.forEach(o => {
-                            if (req.files[o.name] != null) {
-                                Uploader.fileFilter(req.files[o.name], (error, status) => {
+                            if (req['files'][o.name] != null) {
+                                Uploader.fileFilter(req['files'][o.name], (error, status) => {
                                     if (!status) Sender.errorSend(res, { success: false, msg: error, status: 500 })
-                                    Uploader.fileStorage(req.files[o.name], (error, status, files) => {
+                                    Uploader.fileStorage(req['files'][o.name], (error, status, files) => {
                                         if (!status) Sender.errorSend(res, { success: false, msg: error, status: 500 })
                                         req.body.files = files;
                                         next();

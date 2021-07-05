@@ -5,6 +5,7 @@
  */
 require('dotenv').config()
 var app = require("../app")
+import { Request, Response } from "express"
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 import http from 'http';
@@ -21,7 +22,7 @@ app.set("port", port);
 
 // production error handler
 // no stacktraces leaked to user
-app.use(function (err, req, res, next) {
+app.use(function (err, req:Request, res:Response, next) {
     fs.appendFile("access.log", `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} Uncaught Exception: ${err.stack} \n`, () => { });
     if (process.env.NODE_ENV == "production") {
         res.status(500).render(path.join(appRoot.path, "views/error/500.ejs"), { error: "Something went wrong!" })

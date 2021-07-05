@@ -7,6 +7,8 @@ import { IFriends } from "../models/connection.model";
 import { Sender } from "../services/sender.service";
 import { PrismaClient } from "@prisma/client";
 import { BlockedService } from "../services/connection.service";
+import { Request, Response } from "express"
+
 interface FriendRequestData extends IUser {
     friend?: IUser['id'];
     id?: IFriends['id'];
@@ -134,7 +136,7 @@ export const ConnectionValidationMiddleware = new class ValidationMiddleware ext
     validateFriendRequest() {
         return (
             compose()
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     super.validateUserFriendRequest(req.body)
                         .then(data => {
                             next();
@@ -149,22 +151,22 @@ export const ConnectionValidationMiddleware = new class ValidationMiddleware ext
                             return;
                         })
                 })
-                .use((req, res, next) => {
-                    if (req.body.friend == req.user.id) {
+                .use((req:Request, res:Response, next) => {
+                    if (req.body.friend == req['user'].id) {
                         Sender.errorSend(res, { success: false, status: 400, msg: "Cannot send friend request" })
                     }
                     next();
                 })
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     const validateFriends = new ValidateFriends();
-                    validateFriends.validate(req.body.friend, req.user.id, {
+                    validateFriends.validate(req.body.friend, req['user'].id, {
                         error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                         next: () => next()
                     })
                 })
-                .use((req, res, next) => {
-                    let checkInMyList = _.indexOf(req.user.data.blockedByMe, req.body.friend)
-                    let checkInOthersList = _.indexOf(req.user.data.blockedByOthers, req.body.friend)
+                .use((req:Request, res:Response, next) => {
+                    let checkInMyList = _.indexOf(req['user'].data.blockedByMe, req.body.friend)
+                    let checkInOthersList = _.indexOf(req['user'].data.blockedByOthers, req.body.friend)
                     if (checkInMyList == -1 && checkInOthersList == -1) {
                         next();
                     } else {
@@ -177,7 +179,7 @@ export const ConnectionValidationMiddleware = new class ValidationMiddleware ext
     validateFriendRequestUpdate() {
         return (
             compose()
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     super.validateUserFriendRequestUpdate({ id: req.params.id, approved: req.body.approved })
                         .then(data => {
                             next();
@@ -198,18 +200,18 @@ export const ConnectionValidationMiddleware = new class ValidationMiddleware ext
     blockedUsersList() {
         return (
             compose()
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     // Attaches blocked users in both list to the request
                     const validateBlocked = new ValidateBlocked();
-                    validateBlocked.userInBlockList(req.user.id, {
+                    validateBlocked.userInBlockList(req['user'].id, {
                         error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                         next: (blockedObject) => {
                             if (blockedObject != null) {
-                                req.user.data.blockedByMe = blockedObject.blockedByMe // users I blocked
-                                req.user.data.blockedByOthers = blockedObject.blockedByOthers // users who blocked me 
+                                req['user'].data.blockedByMe = blockedObject.blockedByMe // users I blocked
+                                req['user'].data.blockedByOthers = blockedObject.blockedByOthers // users who blocked me 
                             } else {
-                                req.user.data.blockedByMe = [] // users I blocked
-                                req.user.data.blockedByOthers = [] // users who blocked me  
+                                req['user'].data.blockedByMe = [] // users I blocked
+                                req['user'].data.blockedByOthers = [] // users who blocked me  
                                 next()
                             }
                         }
@@ -221,7 +223,7 @@ export const ConnectionValidationMiddleware = new class ValidationMiddleware ext
     validateBlockedRequest() {
         return (
             compose()
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     super.validateUserBlockRequest(req.body)
                         .then(data => {
                             next();
@@ -236,15 +238,15 @@ export const ConnectionValidationMiddleware = new class ValidationMiddleware ext
                             return;
                         })
                 })
-                .use((req, res, next) => {
-                    if (req.body.user == req.user.id) {
+                .use((req:Request, res:Response, next) => {
+                    if (req.body.user == req['user'].id) {
                         Sender.errorSend(res, { success: false, status: 400, msg: "Cannot block user" })
                     }
                     next();
                 })
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     const validateBlocked = new ValidateBlocked();
-                    validateBlocked.validate(req.body.user, req.user.id, {
+                    validateBlocked.validate(req.body.user, req['user'].id, {
                         error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                         next: () => next()
                     })

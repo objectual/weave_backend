@@ -1,15 +1,17 @@
 import * as _ from "lodash";
 import { BlockedService, FriendsService } from "../../../services/connection.service";
 import { Sender } from "../../../services/sender.service";
+import { Request, Response } from "express"
+
 export class Connection {
-    async getFriends(req, res) {
+    async getFriends(req:Request, res:Response) {
         try {
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
             const friendsService = new FriendsService();
             let orQuery = [
-                { userId: req.user.id, approved: true },
-                { friendId: req.user.id, approved: true },
+                { userId: req['user'].id, approved: true },
+                { friendId: req['user'].id, approved: true },
             ]
             let { friends, count } = await friendsService.findWithLimit({ OR: orQuery }, limit, page)
             Sender.send(res, { success: true, data: friends, count, page, pages: Math.ceil(count / limit), status: 200 })
@@ -17,32 +19,32 @@ export class Connection {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    async getFriendRequests(req, res) {
+    async getFriendRequests(req:Request, res:Response) {
         try {
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
             const friendsService = new FriendsService();
-            let { friends, count } = await friendsService.findWithLimit({ friendId: req.user.id, approved: false }, limit, page)
+            let { friends, count } = await friendsService.findWithLimit({ friendId: req['user'].id, approved: false }, limit, page)
             Sender.send(res, { success: true, data: friends, count, page, pages: Math.ceil(count / limit), status: 200 })
         } catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    async getFriendsPendingApproval(req, res) {
+    async getFriendsPendingApproval(req:Request, res:Response) {
         try {
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
             const friendsService = new FriendsService();
-            let { friends, count } = await friendsService.findWithLimit({ userId: req.user.id, approved: false }, limit, page)
+            let { friends, count } = await friendsService.findWithLimit({ userId: req['user'].id, approved: false }, limit, page)
             Sender.send(res, { success: true, data: friends, count, page, pages: Math.ceil(count / limit), status: 200 })
         } catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    async sendFriendRequest(req, res) {
+    async sendFriendRequest(req:Request, res:Response) {
         try {
             let body = {
-                userId: req.user.id,
+                userId: req['user'].id,
                 friendId: req.body.friend,
                 approved: false,
             }
@@ -53,11 +55,11 @@ export class Connection {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    async updateFriendRequest(req, res) {
+    async updateFriendRequest(req:Request, res:Response) {
         try {
             req.body.approved = req.body.approved == "true" ? true : false;
             const friendsService = new FriendsService();
-            let getRequest = await friendsService.findOne({ id: req.params.id, friendId: req.user.id })
+            let getRequest = await friendsService.findOne({ id: req.params.id, friendId: req['user'].id })
             if (getRequest == null) {
                 Sender.errorSend(res, { success: false, status: 409, msg: "Something impossible happened" })
                 return;
@@ -79,11 +81,11 @@ export class Connection {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    async deleteFriendRequest(req, res) {
+    async deleteFriendRequest(req:Request, res:Response) {
         try {
             const friendService = new FriendsService();
             let getRequest = await friendService.findOne({ id: req.params.id })
-            if (getRequest == null || (getRequest.user.profile.userId != req.user.id && getRequest.friend.profile.userId != req.user.id)) {
+            if (getRequest == null || (getRequest.user.profile.userId != req['user'].id && getRequest.friend.profile.userId != req['user'].id)) {
                 // The request is either non existent or (the user trying to delete this request did not generate the request or this request was not meant for this user ) 
                 Sender.errorSend(res, { success: false, status: 409, msg: "Something impossible happened" })
                 return;
@@ -94,27 +96,27 @@ export class Connection {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    async getBlockList(req, res) {
+    async getBlockList(req:Request, res:Response) {
         try {
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
             const blockedService = new BlockedService();
-            let { blocked, count } = await blockedService.findWithLimit({ userId: req.user.id }, limit, page)
+            let { blocked, count } = await blockedService.findWithLimit({ userId: req['user'].id }, limit, page)
             Sender.send(res, { success: true, data: blocked, count, page, pages: Math.ceil(count / limit), status: 200 })
         } catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    async blockUser(req, res) {
+    async blockUser(req:Request, res:Response) {
         try {
             let body = {
-                userId: req.user.id,
+                userId: req['user'].id,
                 blockedId: req.body.user,
             }
             const friendService = new FriendsService();
             let orQuery = [
-                { userId: req.user.id, friendId: req.body.user },
-                { userId: req.body.user, friendId: req.user.id },
+                { userId: req['user'].id, friendId: req.body.user },
+                { userId: req.body.user, friendId: req['user'].id },
             ]
             let alreadyFriends = await friendService.find({ OR: orQuery })
             if (alreadyFriends.length != 0) { // Unfriending user
@@ -127,15 +129,15 @@ export class Connection {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    async unblockUser(req, res) {
+    async unblockUser(req:Request, res:Response) {
         try {
             const blockedService = new BlockedService();
-            let getRequest = await blockedService.findOne({ id: req.params.id, userId: req.user.id })
+            let getRequest = await blockedService.findOne({ id: req.params.id, userId: req['user'].id })
             if (getRequest == null) {
                 Sender.errorSend(res, { success: false, status: 409, msg: "Something impossible happened" })
                 return;
             }
-            let unblocked = await blockedService.delete({ id: req.params.id, userId: req.user.id })
+            let unblocked = await blockedService.delete({ id: req.params.id, userId: req['user'].id })
             Sender.send(res, { success: true, data: unblocked, msg: "User unblocked", status: 200 })
         } catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });

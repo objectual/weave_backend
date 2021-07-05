@@ -3,8 +3,10 @@ import moment from "../../../../../modules/moment";
 import { UserService } from "../../../../services/user.service";
 import { Sender } from "../../../../services/sender.service";
 import { IUserEdit } from "../../../../models/user.model";
+import { Request, Response } from "express"
+
 export class User {
-    async get(req, res) {
+    async get(req:Request, res:Response) {
         try {
             const userService = new UserService();
             let limit = _.toInteger(req.query.limit);
@@ -29,7 +31,7 @@ export class User {
                 let { users, count } = await userService.findWithLimitAdmin(query, limit, page)
                 Sender.send(res, {
                     success: true, data: users,
-                    raw: req.user,
+                    raw: req['user'],
                     page: page,
                     pages: Math.ceil(count / limit),
                     count,
@@ -40,7 +42,7 @@ export class User {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    async update(req, res) {
+    async update(req:Request, res:Response) {
         try {
             const userService = new UserService();
             let update = req.body;

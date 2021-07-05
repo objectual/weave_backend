@@ -6,16 +6,18 @@ import { Sender } from "../../../services/sender.service";
 import { IUserEdit } from "../../../models/user.model";
 import { Cloudinary, ICloudinaryUpload } from "../../../../constants/cloudinary";
 import { ImageService } from "../../../services/image.service";
+import { Request, Response } from "express"
+
 export class User {
-    async get(req, res) {
+    async get(req:Request, res:Response) {
         try {
             const userService = new UserService();
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
             let { key, id } = req.query;
             if (id != null && id != "" && id != undefined) {
-                let checkInMyList = _.indexOf(req.user.data.blockedByMe, id)
-                let checkInOthersList = _.indexOf(req.user.data.blockedByOthers, id)
+                let checkInMyList = _.indexOf(req['user'].data.blockedByMe, id)
+                let checkInOthersList = _.indexOf(req['user'].data.blockedByOthers, id)
                 if (checkInMyList == -1 || checkInOthersList == -1) {
                     // Found a blocked user
                     Sender.errorSend(res, { success: false, msg: "User not found", status: 400 })
@@ -46,8 +48,8 @@ export class User {
                 let { users, count } = await userService.findWithLimit(query, limit, page)
                 let user_profiles = users.map(x => x.profile)
                 user_profiles = _.filter(user_profiles, x => {
-                    let checkInMyList = _.indexOf(req.user.data.blockedByMe, x.userId)
-                    let checkInOthersList = _.indexOf(req.user.data.blockedByOthers, x.userId)
+                    let checkInMyList = _.indexOf(req['user'].data.blockedByMe, x.userId)
+                    let checkInOthersList = _.indexOf(req['user'].data.blockedByOthers, x.userId)
                     if (checkInMyList == -1 && checkInOthersList == -1) {
                         // Didn't find a blocked user
                         return x;
@@ -69,7 +71,7 @@ export class User {
         }
     }
 
-    async update(req, res) {
+    async update(req:Request, res:Response) {
         try {
             const userService = new UserService();
             let update = req.body;
@@ -91,12 +93,12 @@ export class User {
                     update
                 }
             }
-            let updatedUser = await userService.findOneAndUpdate({ id: req.user.id }, user)
-            if (req.user.data.profile.approved == false && updatedUser.profile.firstName != null && updatedUser.profile.lastName != null && updatedUser.profile.about != null && updatedUser.profile.profileImage != null) {
-                updatedUser = await userService.findOneAndUpdate({ id: req.user.id }, { profile: { update: { approved: true } } })
+            let updatedUser = await userService.findOneAndUpdate({ id: req['user'].id }, user)
+            if (req['user'].data.profile.approved == false && updatedUser.profile.firstName != null && updatedUser.profile.lastName != null && updatedUser.profile.about != null && updatedUser.profile.profileImage != null) {
+                updatedUser = await userService.findOneAndUpdate({ id: req['user'].id }, { profile: { update: { approved: true } } })
                 userService.redisUpdateUser(updatedUser) // this only works once because the profile is approved after registrations
             }
-            if (req.user.data.profile.approved) {
+            if (req['user'].data.profile.approved) {
                 userService.redisUpdateUser(updatedUser)
             }
             Sender.send(res, {
@@ -107,12 +109,12 @@ export class User {
         }
     }
 
-    async uploader(req, res) {
+    async uploader(req:Request, res:Response) {
         try {
             const imageService = new ImageService();
             let { files, alreadyUploaded } = req.body;
             const image: any = async (path, name) => { // MIN 
-                return await Cloudinary.uploads(path, `${req.user.id}/${name}`);
+                return await Cloudinary.uploads(path, `${req['user'].id}/${name}`);
             }
             if (files != null && files.length != 0) {
                 if (files.length > Math.abs(3 - alreadyUploaded)) {
@@ -129,7 +131,7 @@ export class User {
                         return imgURL;
                     }))
                     console.log(images, "DONE")
-                    let uploadImages = await imageService.create(images.map(i => { return { cloudinaryId: i.id, path: i.path, userId: req.user.id } }))
+                    let uploadImages = await imageService.create(images.map(i => { return { cloudinaryId: i.id, path: i.path, userId: req['user'].id } }))
                     Sender.send(res, { success: true, data: uploadImages, msg: "Images uploaded", status: 201 })
                 }
             } else {
@@ -141,7 +143,7 @@ export class User {
         }
     }
 
-    async getImages(req, res) {
+    async getImages(req:Request, res:Response) {
         try {
             const imageService = new ImageService();
             Sender.send(res, { success: true, data: await imageService.find({ userId: req.params.id, type: "USER" }), status: 200 })
@@ -149,15 +151,15 @@ export class User {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    async imageRemove(req, res) {
+    async imageRemove(req:Request, res:Response) {
         try {
             const imageService = new ImageService();
             const image: any = async (path) => { // MINI Function 
                 return await Cloudinary.remove(path);
             }
-            const deletedImage = await imageService.findOne({ id: req.body.id, userId: req.user.id, type: "USER" })
+            const deletedImage = await imageService.findOne({ id: req.body.id, userId: req['user'].id, type: "USER" })
             await image(deletedImage.cloudinaryId);
-            Sender.send(res, { success: true, msg: "Image deleted", data: await imageService.delete({ userId: req.user.id, type: "USER", id: req.body.id }), status: 200 })
+            Sender.send(res, { success: true, msg: "Image deleted", data: await imageService.delete({ userId: req['user'].id, type: "USER", id: req.body.id }), status: 200 })
         } catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }

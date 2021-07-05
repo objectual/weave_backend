@@ -1,7 +1,8 @@
 import { Sender } from "../../../../services/sender.service";
+import { Request, Response } from "express"
 
 export class Events {
-    getEvents(req, res){
+    getEvents(req:Request, res:Response){
         try{
             
         }catch(e){
@@ -9,7 +10,7 @@ export class Events {
         }
     }
     
-    updateEvent(req, res){
+    updateEvent(req:Request, res:Response){
         try{
 
         }catch(e){
@@ -17,7 +18,7 @@ export class Events {
         }
     }
     
-    deleteEvent(req, res){
+    deleteEvent(req:Request, res:Response){
         try{
 
         }catch(e){

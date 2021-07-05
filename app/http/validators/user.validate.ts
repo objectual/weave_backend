@@ -1,6 +1,7 @@
 "use strict";
 import Joi from "joi";
 import compose from "composable-middleware"
+import { Request, Response } from "express"
 import { GCM, IUser, Role } from "../models/user.model";
 import { Sender } from "../services/sender.service";
 import { PrismaClient } from "@prisma/client";
@@ -257,7 +258,7 @@ export const UserValidationMiddleware = new class ValidationMiddleware extends V
     validateUserRegistration() {
         return (
             compose()
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     super.validateRegisterData(req.body)
                         .then(data => {
                             next();
@@ -277,7 +278,7 @@ export const UserValidationMiddleware = new class ValidationMiddleware extends V
     validateUserVerify() {
         return (
             compose()
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     super.validateVerifyData(req.body)
                         .then(data => {
                             next();
@@ -297,7 +298,7 @@ export const UserValidationMiddleware = new class ValidationMiddleware extends V
     validateUserLogin() {
         return (
             compose()
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     super.validateLoginData(req.body)
                         .then(data => {
                             next();
@@ -317,8 +318,8 @@ export const UserValidationMiddleware = new class ValidationMiddleware extends V
     validateUserUpdate() {
         return (
             compose()
-                .use((req, res, next) => {
-                    if (req.user.data.profile.approved == false) {
+                .use((req:Request, res:Response, next) => {
+                    if (req['user'].data.profile.approved == false) {
                         super.validateUserUpdateDataRequired(req.body)
                             .then(data => {
                                 next();
@@ -354,7 +355,7 @@ export const UserValidationMiddleware = new class ValidationMiddleware extends V
     validateAdminUserUpdate() {
         return (
             compose()
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     super.validateAdminUserUpdateData(req.body)
                         .then(data => {
                             next();
@@ -375,9 +376,9 @@ export const UserValidationMiddleware = new class ValidationMiddleware extends V
     validateUserImageCount() {
         return (
             compose()
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     const validateImages = new ValidateImages();
-                    validateImages.validate(req.user.id, {
+                    validateImages.validate(req['user'].id, {
                         error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                         next: (count) => { req.body.alreadyUploaded = count; next() }
                     })

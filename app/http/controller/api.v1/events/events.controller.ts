@@ -3,19 +3,20 @@ import * as _ from "lodash"
 import { EventService } from "../../../services/event.service";
 import { IEventCreate, IEventUpdate } from "../../../models/event.model";
 import { ILocation } from "../../../models/location.model";
+import { Request, Response } from "express";
 export class Events {
-    async getEvents(req, res) {
+    async getEvents(req:Request, res:Response) {
         try {
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
             const eventService = new EventService();
             let orQuery = [
-                { userId: req.user.id },
+                { userId: req['user'].id },
                 {
                     members: {
                         some: {
                             id: {
-                                contains: req.user.id,
+                                contains: req['user'].id,
                             },
                         },
                     }
@@ -28,7 +29,7 @@ export class Events {
         }
     }
 
-    async createEvent(req, res) {
+    async createEvent(req:Request, res:Response) {
         try {
             let location: ILocation = {
                 address: req.body.address,
@@ -41,7 +42,7 @@ export class Events {
                 from: new Date(req.body.from),
                 to: new Date(req.body.to),
                 location: { connectOrCreate: { create: location, where: { lat_long: { lat: location.lat, long: location.long } } } },
-                owner: { connect: { id: req.user.id } },
+                owner: { connect: { id: req['user'].id } },
                 members: { connect: req.body.members.map(x => { return { id: x } }) },
             }
             const eventService = new EventService();
@@ -52,7 +53,7 @@ export class Events {
         }
     }
 
-    async updateEvent(req, res) {
+    async updateEvent(req:Request, res:Response) {
         try {
             let location: ILocation = {
                 address: req.body.address,
@@ -81,15 +82,15 @@ export class Events {
         }
     }
 
-    async deleteEvent(req, res) {
+    async deleteEvent(req:Request, res:Response) {
         try {
             const eventService = new EventService();
-            let event = await eventService.findOne({ id: req.params.id, userId: req.user.id })
+            let event = await eventService.findOne({ id: req.params.id, userId: req['user'].id })
             if (event == null) {
                 Sender.errorSend(res, { success: false, status: 409, msg: "Only event owner can remove event" })
                 return;
             }
-            let unblocked = await eventService.delete({ id: req.params.id, userId: req.user.id })
+            let unblocked = await eventService.delete({ id: req.params.id, userId: req['user'].id })
             Sender.send(res, { success: true, data: unblocked, msg: "Event removed", status: 200 })
         } catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });

@@ -4,8 +4,10 @@ import fs from 'fs';
 import request from "request";
 import config from "config";
 const cloudinary = require('cloudinary').v2;
+import { Request, Response } from "express"
+
 export class Resources {
-    public_image_get(req, res) {
+    public_image_get(req:Request, res:Response) {
         let filename = req.params.filename.replace(/\//g, '.')
         let split = filename.split(".");
         let ext = split[split.length - 1];
@@ -25,7 +27,7 @@ export class Resources {
             res.status(403).render(path.join(appRoot.path, "views/error/403.ejs"), { error: "YOU CAN'T ACCESS THIS ROUTE THROUGH THE BROWSER" })
         }
     };
-    cloudinary_image_get(req, res) {
+    cloudinary_image_get(req:Request, res:Response) {
         // let filename = req.params.filename.replace(/\//g, '.') //Dont know why I'm doing this
         cloudinary.api.resource(`images/${req.params.userId}/${req.params.filename}`)
             .then(result => {
@@ -44,7 +46,7 @@ export class Resources {
                 res.status(404).render(path.join(appRoot.path, "views/error/404.ejs"), { error: "" })
             });
     };
-    public_css_get(req, res) {
+    public_css_get(req:Request, res:Response) {
 
         let filename = req.params.filename.replace(/\//g, '.')
         let split = filename.split(".");

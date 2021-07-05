@@ -2,17 +2,19 @@ import compose from "composable-middleware";
 import * as _ from "lodash";
 import { RedisService } from "../../cache/redis.service";
 import { Sender } from "../services/sender.service";
+import { Request, Response } from "express"
+
 export const CacheMiddleware = new class CacheMiddleware {
     userSearch() {
         return (
             compose()
                 // Attach user to request
-                .use((req, res, next) => {
-                    let { id, key } = req.query;
+                .use((req: Request, res: Response, next) => {
+                    let { id, key } = <{ id: string, key: string }>req.query;
                     if (id != null && id != "" && id != undefined) {
                         // Check if I blocked of the other user blocked
-                        let checkInMyList = _.indexOf(req.user.data.blockedByMe, id)
-                        let checkInOthersList = _.indexOf(req.user.data.blockedByOthers, id)
+                        let checkInMyList = _.indexOf(req['user'].data.blockedByMe, id)
+                        let checkInOthersList = _.indexOf(req['user'].data.blockedByOthers, id)
                         if (checkInMyList == -1 || checkInOthersList == -1) {
                             // Found a blocked user
                             Sender.errorSend(res, { success: false, msg: "User not found", status: 400 })
@@ -34,11 +36,11 @@ export const CacheMiddleware = new class CacheMiddleware {
                             Sender.errorSend(res, { status: 500, success: false, msg: error.message });
                         })
                     } else if (key != null && key != "" && key != undefined) {
-                        RedisService.searchData(`*${key.toLowerCase()}*|user`).then(users => { 
+                        RedisService.searchData(`*${key.toLowerCase()}*|user`).then(users => {
                             if (users.length > 0) {
                                 users = _.filter(users, x => {
-                                    let checkInMyList = _.indexOf(req.user.data.blockedByMe, x.userId)
-                                    let checkInOthersList = _.indexOf(req.user.data.blockedByOthers, x.userId)
+                                    let checkInMyList = _.indexOf(req['user'].data.blockedByMe, x.userId)
+                                    let checkInOthersList = _.indexOf(req['user'].data.blockedByOthers, x.userId)
                                     if (checkInMyList == -1 && checkInOthersList == -1) {
                                         // Didn't find a blocked user
                                         return x;

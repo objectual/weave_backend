@@ -20,8 +20,13 @@ export class Authentication {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
         }
     }
-    jwt(req: Request, res: Response) {
-        Sender.send(res, { success: true, status: 200, data: req['session'].auth })
+    async jwt(req: Request, res: Response) {
+        Sender.send(res, {
+            success: true, status: 200, data: await AuthService.generateAuthToken({
+                id: req['user'].id, role: req['user'].role
+                , exp: 48 * 60 * 60 * 1000 // 48 hours session max age in milliseconds
+            })
+        })
     }
     async verify(req: Request, res: Response) {
         try {

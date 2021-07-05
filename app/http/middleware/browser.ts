@@ -3,12 +3,14 @@ import compose from "composable-middleware"
 import config from "config";
 import appRoot from "app-root-path";
 import path from "path";
+import { Request, Response } from "express"
+
 export class BrowserMiddleware {
     public static restrictedBrowser() {
         return (
             compose()
                 // Attach user to request
-                .use((req, res, next) => {
+                .use((req:Request, res:Response, next) => {
                     if (req.headers['x-secret'] == process.env.PASSPHRASE) {
                         // custom header exists, then call next() to pass to the next function
                         next();
