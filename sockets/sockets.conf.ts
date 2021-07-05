@@ -3,7 +3,6 @@ import { ValidateBlocked } from "../app/http/validators/connection.validate";
 
 export async function userConfigure(socket) {
     return new Promise(async (resolve, reject) => {
-        //this socket is authenticated, we are good to handle more events from it.
         const userService = new UserService()
         const user = await userService.findOneAdmin({ id: socket['decoded_token'].id, blocked: false }).catch(e => reject(e.message))
         resolve(user)

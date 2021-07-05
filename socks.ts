@@ -17,22 +17,30 @@ module.exports = function (server) {
     }));
 
     io.on('connect', async (socket) => {
-        socket['user'] = await userConfigure(socket).catch(msg => new ResponseSockets(socket).error(msg, null))
-        const { blockedByMe, blockedByOthers } = await userBlockedListConfigure(socket).catch(msg => new ResponseSockets(socket).error(msg, null))
-        socket['blockedByMe'] = blockedByMe
-        socket['blockedByOthers'] = blockedByOthers
+        if (socket['decoded_token'].hasOwnProperty("exp") == false || Math.floor(new Date().getTime() / 1000) > socket['decoded_token'].exp) {
+            new ResponseSockets(socket).error(`Session Expired`, null)
+            socket.disconnect(true)
+            return ;
+        } else {
+            socket['user'] = await userConfigure(socket).catch(msg => new ResponseSockets(socket).error(msg, null))
+            const { blockedByMe, blockedByOthers } = await userBlockedListConfigure(socket).catch(msg => new ResponseSockets(socket).error(msg, null))
+            socket['blockedByMe'] = blockedByMe
+            socket['blockedByOthers'] = blockedByOthers
 
-        console.log(`connected: ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, socket.id)
+            console.log(`connected: ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, socket.id)
 
-        socket.emit('authorized', { text: `Welcome to iωeave, ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, data: { 
-            handshake: true, user: socket['user'], blockedByMe:socket['blockedByMe'], blockedByOthers:socket['blockedByOthers'] 
-        }, time: Date.now() });
+            socket.emit('authorized', {
+                text: `Welcome to iωeave, ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, data: {
+                    handshake: true, user: socket['user'], blockedByMe: socket['blockedByMe'], blockedByOthers: socket['blockedByOthers']
+                }, time: Date.now()
+            });
 
-        //Initializing Location Routes
-        new LocationSockets(socket).routes
+            //Initializing Location Routes
+            new LocationSockets(socket).routes
 
-        socket.on('disconnect', () => {
-            console.log(`disconnected: ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, socket.id)
-        })
+            socket.on('disconnect', () => {
+                console.log(`disconnected: ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, socket.id)
+            })
+        }
     });
 }

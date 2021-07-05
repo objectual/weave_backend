@@ -38,24 +38,25 @@ function __main__(user_id) {
     }
 }
 
-const P = {
-    longitude: 24.925467, latitude: 67.059955
-}
-const R = 1000 //meters
 function startNearbyUsers(user_id) {
-    console.log("Location updater started...")
-    let { longitude, latitude } = randomLocation.randomCircumferencePoint(P, R);
+    console.log("Nearby search started...")
     socket.emit('location-users', { user_id }, (error) => {
         if (error) {
             console.log(error);
         }
-        process.exit(1)
     });
 }
 function socketListeners() {
     console.log("Messages listener attached")
+    socket.on('location-users', message => {
+        console.log("Nearby Users: ", message)
+
+        process.exit(1)
+    });
     socket.on('message', message => {
         console.log("Message received: ", message)
+
+        process.exit(1)
     });
     socket.on('error', message => {
         console.log("Error received: ", message)

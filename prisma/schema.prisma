@@ -45,7 +45,7 @@ model Profile {
   about               String?
   profileImage        String?   @default("https://res.cloudinary.com/weavemasology/image/upload/v1623680410/images/user_wghiyv.png")
   locationRange       Int       @default(10) // Noted in KM
-  locationVisibility  Boolean   @default(true)
+  locationVisibility  Boolean   @default(true) // Let other users see my location
   user                User      @relation(fields: [userId], references: [id]) // Belongs to user
   userId              String
   createdAt           DateTime  @default(now())

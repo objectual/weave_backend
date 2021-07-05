@@ -1,4 +1,5 @@
 import * as _ from "lodash";
+
 export class ResponseSockets {
     private _socket
     constructor(socket) {
@@ -11,6 +12,10 @@ export class ResponseSockets {
 
     message(msg, data) {
         return this._socket.emit('message', { text: msg, data, time: Date.now() });
+    }
+
+    locationUsers(msg, data){
+        return this._socket.emit('location-users', { text: msg, data, time: Date.now() });
     }
 
 }

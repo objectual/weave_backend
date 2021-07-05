@@ -22,6 +22,9 @@ __main__(args['--user_id'])
 function __main__(user_id) {
     try {
         socket.on('connect', () => {
+            socket.on('error', message => {
+                console.log("Error received: ", message)
+            });
             socket.on('authorized', message => { // This is the successful connection point
                 // If you don't get a response from this, you ARE NOT CONNECTED TO THE SYSTEM
                 clearTimeout(die);
@@ -57,8 +60,5 @@ function socketListeners() {
     console.log("Messages listener attached")
     socket.on('message', message => {
         console.log("Message received: ", message)
-    });
-    socket.on('error', message => {
-        console.log("Error received: ", message)
     });
 }
