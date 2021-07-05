@@ -59,7 +59,7 @@ export class LocationSockets {
         let userService = new UserService()
         return new Promise(async (resolve, reject) => {
             let user_data = await userService.find({ id: { in: distances.map(x => x.id) }, blocked: false, profile: { approved: true } })
-            resolve(user_data.users.map(x => { return { location: _.filter(data, u => u.id == x.id)[0], data: x } }))
+            resolve(user_data.users.map(x => { return { location: _.filter(data, u => u.id == x.id)[0], distance: _.filter(distances, d => d.id == x.id)[0].distance, data: x } }))
         })
     }
 
