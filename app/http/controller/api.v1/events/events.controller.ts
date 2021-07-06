@@ -72,8 +72,7 @@ export class Events {
                 body.members['connect'] = req.body.members.connect.id.map(x => { return { id: x } })
             } else if (req.body.members != null && req.body.members.disconnect != null && req.body.members.disconnect.id.length > 0) {
                 body.members['disconnect'] = req.body.members.disconnect.id.map(x => { return { id: x } })
-            }
-            console.log(body)
+            } 
             const eventService = new EventService();
             let event = await eventService.update({ id: req.params.id }, body);
             Sender.send(res, { success: true, data: event, status: 201, msg: "Event updated" })

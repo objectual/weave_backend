@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import { RedisService } from "../app/cache/redis.service";
 import { UserService } from "../app/http/services/user.service";
-import { ResponseSockets } from "./response.socket";
+import { ISocketUserLocation, ResponseSockets } from "./response.socket";
 export class LocationSockets {
     private _socket
     constructor(socket) {
@@ -27,13 +27,21 @@ export class LocationSockets {
             2. Filter users not in their visibility range
             3. Update nearby data
             */
-            new ResponseSockets(this._socket).locationUsers("Nearby Users", { user: this._socket['user'], users: await this.getNearbyUsers(userLocations, myLocation.lat, myLocation.long) })
+            let users = await this.getNearbyUsers(userLocations, myLocation.lat, myLocation.long)
+            users = _.filter(users, u => {
+                let checkInMyList = _.indexOf(this._socket['blockedByMe'], u.data.id)
+                let checkInOthersList = _.indexOf(this._socket['blockedByOthers'], u.data.id)
+                if (checkInMyList == -1 && checkInOthersList == -1) {
+                    return u;
+                }
+            })
+            new ResponseSockets(this._socket).locationUsers("Nearby Users", { user: this._socket['user'], users: users })
             callback();
         })
         return this._socket
     }
 
-    private async getNearbyUsers(data, _lat, _long) {
+    private async getNearbyUsers(data, _lat, _long): Promise<ISocketUserLocation[]> {
         let distances = _.filter(data.map(({ lat, long, range, id, locationVisibility }) => {
             let distance = (lat1, lon1, lat2, lon2) => {
                 var radlat1 = (Math.PI * lat1) / 180;
@@ -51,7 +59,6 @@ export class LocationSockets {
                 dist = dist * 60 * 1.1515 * 1.609; // 1mile = 1.609km
                 return Math.round(dist); //KM
             };
-            console.log(distance(_lat, _long, lat, long), range, id)
             return { distance: distance(_lat, _long, lat, long), id: id, range, locationVisibility }
         }), function (o) {
             return (o.distance <= o.range && o.locationVisibility == true);

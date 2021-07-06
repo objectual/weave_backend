@@ -20,7 +20,7 @@ module.exports = function (server) {
         if (socket['decoded_token'].hasOwnProperty("exp") == false || Math.floor(new Date().getTime() / 1000) > socket['decoded_token'].exp) {
             new ResponseSockets(socket).error(`Session Expired`, null)
             socket.disconnect(true)
-            return ;
+            return;
         } else {
             socket['user'] = await userConfigure(socket).catch(msg => new ResponseSockets(socket).error(msg, null))
             const { blockedByMe, blockedByOthers } = await userBlockedListConfigure(socket).catch(msg => new ResponseSockets(socket).error(msg, null))
@@ -29,11 +29,8 @@ module.exports = function (server) {
 
             console.log(`connected: ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, socket.id)
 
-            socket.emit('authorized', {
-                text: `Welcome to iωeave, ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, data: {
-                    handshake: true, user: socket['user'], blockedByMe: socket['blockedByMe'], blockedByOthers: socket['blockedByOthers']
-                }, time: Date.now()
-            });
+            new ResponseSockets(socket).authorized(`Welcome to iωeave, ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`,
+                { handshake: true, user: socket['user'], blockedByMe: socket['blockedByMe'], blockedByOthers: socket['blockedByOthers'] });
 
             //Initializing Location Routes
             new LocationSockets(socket).routes

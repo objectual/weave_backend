@@ -1,21 +1,51 @@
 import * as _ from "lodash";
-
+interface ISocketEmit {
+    text: string,
+    data: {
+        handshake?: boolean,
+        users?: ISocketUserLocation[],
+        user: Object | string,
+        blockedByMe?: string[],
+        blockedByOthers?: string[],
+        lat?: number,
+        long?: number
+    }
+}
+export interface ISocketUserLocation {
+    location: {
+        id: string,
+        locationVisibility: boolean,
+        range: number,
+        lat: number,
+        long: number
+    },
+    distance: number,
+    data: Object
+}
 export class ResponseSockets {
     private _socket
     constructor(socket) {
         this._socket = socket
     }
 
-    error(msg, data) {
-        return this._socket.emit('error', { text: msg, data, time: Date.now() });
+    private emit(emitter, obj: ISocketEmit) {
+        return this._socket.emit(emitter, { ...obj, time: Date.now() })
     }
 
-    message(msg, data) {
-        return this._socket.emit('message', { text: msg, data, time: Date.now() });
+    error(msg: ISocketEmit['text'], data: ISocketEmit['data']) {
+        return this.emit("error", { text: msg, data });
     }
 
-    locationUsers(msg, data){
-        return this._socket.emit('location-users', { text: msg, data, time: Date.now() });
+    message(msg: ISocketEmit['text'], data: ISocketEmit['data']) {
+        return this.emit("message", { text: msg, data });
+    }
+
+    authorized(msg: ISocketEmit['text'], data: ISocketEmit['data']) {
+        return this.emit("authorized", { text: msg, data });
+    }
+
+    locationUsers(msg: ISocketEmit['text'], data: ISocketEmit['data']) {
+        return this.emit("location-users", { text: msg, data });
     }
 
 }
