@@ -5,31 +5,36 @@ import { IEventCreate, IEventUpdate } from "../../../models/event.model";
 import { ILocation } from "../../../models/location.model";
 import { Request, Response } from "express";
 export class Events {
-    async getEvents(req:Request, res:Response) {
+    async getEvents(req: Request, res: Response) {
         try {
             let limit = _.toInteger(req.query.limit);
             let page = _.toInteger(req.query.page);
             const eventService = new EventService();
-            let orQuery = [
-                { userId: req['user'].id },
-                {
-                    members: {
-                        some: {
-                            id: {
-                                contains: req['user'].id,
+            if (req.query.id != null && req.query.id != undefined && req.query.id != "") {
+                let event  = await eventService.findOne({ id: req.query.id })
+                Sender.send(res, { success: true, data: event, status: 200 })
+            } else {
+                let orQuery = [
+                    { userId: req['user'].id },
+                    {
+                        members: {
+                            some: {
+                                id: {
+                                    contains: req['user'].id,
+                                },
                             },
-                        },
+                        }
                     }
-                }
-            ]
-            let { events, count } = await eventService.findWithLimit({ OR: orQuery }, limit, page)
-            Sender.send(res, { success: true, data: events, count, page, pages: Math.ceil(count / limit), status: 200 })
+                ]
+                let { events, count } = await eventService.findWithLimit({ OR: orQuery }, limit, page)
+                Sender.send(res, { success: true, data: events, count, page, pages: Math.ceil(count / limit), status: 200 })
+            }
         } catch (e) {
             Sender.errorSend(res, { success: false, msg: e.message, status: 500 })
         }
     }
 
-    async createEvent(req:Request, res:Response) {
+    async createEvent(req: Request, res: Response) {
         try {
             let location: ILocation = {
                 address: req.body.address,
@@ -53,14 +58,14 @@ export class Events {
         }
     }
 
-    async updateEvent(req:Request, res:Response) {
+    async updateEvent(req: Request, res: Response) {
         try {
             let location: ILocation = {
                 address: req.body.address,
                 lat: req.body.lat,
                 long: req.body.long,
             }
-            let body:IEventUpdate = {
+            let body: IEventUpdate = {
                 title: req.body.title,
                 description: req.body.description,
                 from: new Date(req.body.from),
@@ -72,7 +77,7 @@ export class Events {
                 body.members['connect'] = req.body.members.connect.id.map(x => { return { id: x } })
             } else if (req.body.members != null && req.body.members.disconnect != null && req.body.members.disconnect.id.length > 0) {
                 body.members['disconnect'] = req.body.members.disconnect.id.map(x => { return { id: x } })
-            } 
+            }
             const eventService = new EventService();
             let event = await eventService.update({ id: req.params.id }, body);
             Sender.send(res, { success: true, data: event, status: 201, msg: "Event updated" })
@@ -81,7 +86,7 @@ export class Events {
         }
     }
 
-    async deleteEvent(req:Request, res:Response) {
+    async deleteEvent(req: Request, res: Response) {
         try {
             const eventService = new EventService();
             let event = await eventService.findOne({ id: req.params.id, userId: req['user'].id })

@@ -147,6 +147,35 @@ async function main() {
         include: { user: true, blocked: true },
     })
     console.log("Connections Created", `Jimmy -> Suzy <- Hannah -x> Jimmy`, { Jimmy_Harper_Connect_Suzy_Adams, Hannah_Olive_Connect_Suzy_Adams, Hannah_Olive_Blocks_Jimmy_Harper })
+
+
+    let event_location = {
+        address: "W3C6+F3 Gulberg Town, Karachi, Pakistan",
+        lat: 24.921211,
+        long: 67.060162,
+    }
+    let event_body = {
+        id: "a0f4e2cb-a5ea-4399-aba2-c58a8479bd44",
+        title: "The Big Fight",
+        description: "The biggest event in London",
+        from: new Date("2021-07-15T12:00+05:00"),
+        to: new Date("2021-07-15T16:00+05:00"),
+        location: { connectOrCreate: { create: event_location, where: { lat_long: { lat: event_location.lat, long: event_location.long } } } },
+        owner: { connect: { id: "9b4b4f2c-7748-4214-8708-96ba9ab30957" } },
+        members: {
+            connect: [
+                { id: "e031e3b2-bd0d-455a-b08a-3a21271be74e" },
+                { id: "378e5609-1ad7-44e2-acf2-be1cb4028a4a" }
+            ]
+        }
+    }
+    const Hannah_Olive_Suzy_Adams_Jimmy_Harper_Event = await prisma.event.upsert({
+        where: { id: "a0f4e2cb-a5ea-4399-aba2-c58a8479bd44" },
+        update: {},
+        create: event_body,
+        include: { owner: true, members: true, location: true },
+    })
+    console.log("Event created: ", Hannah_Olive_Suzy_Adams_Jimmy_Harper_Event)
 }
 main()
     .catch(e => {
