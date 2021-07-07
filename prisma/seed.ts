@@ -90,7 +90,7 @@ async function main() {
             "role": "USER",
             "profile": {
                 "create": {
-                    "phoneNo": "923323080980",
+                    "phoneNo": "923323070980",
                     "firstName": "Jimmy",
                     "lastName": "Harper",
                     "city": "london",
