@@ -1,6 +1,12 @@
 import { PrismaClient } from '@prisma/client'
+import { Kafka } from "kafkajs"
 const prisma = new PrismaClient()
-
+const kafka = new Kafka({
+    clientId: "messageservice",
+    brokers: [`${process.env.IP}:29092`]
+})
+const admin = kafka.admin()
+admin.connect()
 async function main() {
     const Weave_Admin = await prisma.user.upsert({
         where: { id: "e6895e69-bb65-4f92-8989-6aae24defc86" },
@@ -28,6 +34,16 @@ async function main() {
         },
         include: { profile: true },
     })
+
+    await admin.createTopics({
+        topics: [{
+            topic: "447752581599",
+            numPartitions: 2
+        }]
+    }).then(()=>{
+        console.log("TOPICS CREATED .... ", "447752581599")
+    })
+
     const Hannah_Olive = await prisma.user.upsert({
         where: { id: "e031e3b2-bd0d-455a-b08a-3a21271be74e" },
         update: {},
@@ -54,6 +70,15 @@ async function main() {
         },
         include: { profile: true },
     })
+
+    await admin.createTopics({
+        topics: [{
+            topic: "923342481099",
+            numPartitions: 2
+        }]
+    })
+    console.log("TOPICS CREATED .... ", "923342481099")
+
     const Suzy_Adams = await prisma.user.upsert({
         where: { id: "9b4b4f2c-7748-4214-8708-96ba9ab30957" },
         update: {},
@@ -80,6 +105,16 @@ async function main() {
         },
         include: { profile: true },
     })
+
+    await admin.createTopics({
+        topics: [{
+            topic: "923343664550",
+            numPartitions: 2
+        }]
+    }).then(()=>{
+        console.log("TOPICS CREATED .... ", "923343664550")
+    })
+
     const Jimmy_Harper = await prisma.user.upsert({
         where: { id: "378e5609-1ad7-44e2-acf2-be1cb4028a4a" },
         update: {},
@@ -107,7 +142,19 @@ async function main() {
         },
         include: { profile: true },
     })
+
+    await admin.createTopics({
+        topics: [{
+            topic: "923323070980",
+            numPartitions: 2
+        }]
+    }).then(()=>{
+        console.log("TOPICS CREATED .... ", "923323070980")
+    })
+
     console.log("Users Created: ", { Weave_Admin, Suzy_Adams, Hannah_Olive, Jimmy_Harper })
+    await admin.disconnect()
+
     const Jimmy_Harper_Connect_Suzy_Adams = await prisma.friends.upsert({
         where: { id: "8497dc70-f1c7-4b7f-922f-4c7ca47444c3" },
         update: {},

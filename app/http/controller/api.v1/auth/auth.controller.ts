@@ -5,6 +5,7 @@ import { AuthService } from "../../../services/auth.service";
 import { IProfileCreate } from "../../../models/profile.user.model";
 import { Sender } from "../../../services/sender.service";
 import { ValidateProfile, ValidateUser } from "../../../validators/user.validate";
+import { KafkaService } from "../../../services/kafka.service";
 export class Authentication {
     login(req: Request, res: Response) {
         try {
@@ -43,6 +44,7 @@ export class Authentication {
                             next: async (profile: IProfileCreate) => {
                                 let _newUser = { profile: { create: profile } }
                                 user = await userService.create(_newUser, profile);
+                                new KafkaService().setTopic(user.profile.phoneNo)
                                 existing = false;
                                 approved = false;
                             }
