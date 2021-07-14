@@ -13,8 +13,8 @@ export class FriendsService {
     private prisma;
     select = {
         id: true,
-        user: { select: { profile: true } },
-        friend: { select: { profile: true } },
+        user: { select: { encryption: true, profile: true } },
+        friend: { select: { encryption: true, profile: true } },
         approved: true,
         createdAt: true,
         updatedAt: true,
@@ -105,7 +105,7 @@ export class BlockedService {
                 .finally(() => this.prisma.$disconnect())
         })
     }
-    
+
     find(where): Promise<IBlocked[]> {
         return new Promise((resolve, reject) => {
             this.prisma.blockedList

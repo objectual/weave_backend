@@ -1,8 +1,9 @@
 "use strict";
 import { PrismaClient } from '@prisma/client';
 import { IUserCreateProfile, IUserProfile } from "../models/user.model";
-import { IProfileCreate } from '../models/profile.user.model';
+import { IProfile, IProfileCreate } from '../models/profile.user.model';
 import { RedisService } from '../../cache/redis.service';
+import { generateKeyPair } from 'crypto';
 
 const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_ACCOUNT_TOKEN);
 
@@ -10,6 +11,7 @@ const selectUser = {
     id: true,
     email: true,
     role: true,
+    encryption: true,
     profile: {
         select: {
             phoneNo: true,
@@ -35,6 +37,7 @@ const select = { // ONLY USED FOR ADMIN
     email: true,
     blocked: true,
     role: true,
+    encryption: true,
     gcm: true,
     images: true,
     profile: true,
@@ -60,7 +63,9 @@ export class UserService {
                 .create({
                     data: _user, select: selectUser
                 })
-                .then(_user => resolve(this.parseUserBigIntJSON(_user)))
+                .then(async _user => {
+                    resolve(this.parseUserBigIntJSON(await this.updateKeyPair(_user)))
+                })
                 .catch(error => reject(error))
                 .finally(() => this.prisma.$disconnect())
         });
@@ -190,25 +195,28 @@ export class UserService {
                         .create({ to: `+${phoneNo}`, code })
                         .then(async message => {
                             if (message.valid == true) {
-                                // SEND AUTH 
+                                // SEND AUTH  
                                 this.findOneAdmin({ profile: { phoneNo } })
-                                    .then(user => {
-                                        if (user == null) resolve(null);
-                                        resolve(user);
+                                    .then(async user => {
+                                        if (user == null) { resolve(null) } else {
+                                            resolve(await this.updateKeyPair(user))
+                                        }
                                     })
                                     .catch(error => reject(error))
                             } else if (code == 99 && process.env.NODE_ENV == "development") {
-                                reject("Code does not match the code sent to your phone")
-                            }else{
+                                // I forgot why this is here...
                                 reject("Invalid code")
+                            } else {
+                                reject("Code does not match the code sent to your phone")
                             }
                         })
                         .catch(error => { reject(error) })
                 } else {
                     this.findOneAdmin({ profile: { phoneNo } })
-                        .then(user => {
-                            if (user == null) resolve(null);
-                            resolve(user);
+                        .then(async user => {
+                            if (user == null) { resolve(null) } else {
+                                resolve(await this.updateKeyPair(user))
+                            }
                         })
                         .catch(error => reject(error))
                 }
@@ -216,6 +224,50 @@ export class UserService {
                 reject(e.message)
             }
         })
+    }
+
+    updateKeyPair(user: IUserProfile): Promise<IUserProfile> {
+        return new Promise((resolve, reject) => {
+            generateKeyPair('rsa', {
+                modulusLength: 1024,
+                publicKeyEncoding: {
+                    type: 'spki',
+                    format: 'pem'
+                },
+                privateKeyEncoding: {
+                    type: 'pkcs8',
+                    format: 'pem',
+                    cipher: 'aes-256-cbc',
+                    passphrase: process.env.PASSPHRASE
+                }
+            }, (err, publicKey, privateKey) => {
+                if (err) {
+                    return reject(err)
+                }
+                this.prisma.user.update({
+                    where: {
+                        id: user.id
+                    },
+                    data: {
+                        encryption: {
+                            upsert: {
+                                update: {
+                                    pub: Buffer.from(publicKey).toString('base64')
+                                },
+                                create: {
+                                    pub: Buffer.from(publicKey).toString('base64')
+                                }
+                            }
+                        }
+                    },
+                    select: select
+                }).then((user) => {
+                    user.encryption['sec'] = Buffer.from(privateKey).toString('base64')
+                    resolve(user)
+                }).catch(error => { reject(error) })
+                    .finally(() => this.prisma.$disconnect())
+            })
+        });
     }
 
     async redisSetUserData(auth: string, exp: number) {

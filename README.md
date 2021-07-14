@@ -10,6 +10,7 @@
   <a href="#updating">Updating</a> •
   <a href="#features">Features</a> • 
   <a href="#wiki">Wiki</a> •  
+  <a href="#end-to-end-encryption">End2End Encryption</a> •  
   <a href="#guides">Guides</a> •  
   <a href="#support">Support</a> • 
 </p>
@@ -50,15 +51,23 @@ docker run --name pgadmin4 -p 10001:80 -e PGADMIN_DEFAULT_EMAIL=user@domain.com 
 ```
 * For *Kafka* and *Zookeeper* you need to run these commands. Just add the **IP** where needed and run these commands
 
+**ZOOKEEPER**
+
 ```
 docker run -d -p 32181:32181 --name=zookeeper -e ZOOKEEPER_CLIENT_PORT=32181 -e ZOOKEEPER_TICK_TIME=2000 -e ZOOKEEPER_TICK_TIME=2000 confluentinc/cp-zookeeper
 ```
+
+**KAFKA**
 
 ```
 docker run -d -p 29092:29092 --name=kafka -e KAFKA_ZOOKEEPER_CONNECT=<IP>:32181 -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://<IP>:29092 -e KAFKA_BROKER_ID=2 -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 confluentinc/cp-kafka
 ``` 
 
+**KAFKA DASHBOARD**
 
+```
+docker run -p 8080:8080 -e KAFKA_CLUSTERS_0_NAME=local -e KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=<IP>:29092 -d provectuslabs/kafka-ui:latest
+```
 ## Updating
 
 When a **new version** is out, you have **two methods** to _update_:
@@ -88,19 +97,19 @@ This _config_ is **updated** (at a random time), so make sure you **come back** 
 
 Do you **need some help**? Check the project API doc from the [View Published Doc](https://documenter.getpostman.com/view/15958771/TzY69EUQ).
 
-### End-to-End Encryption
+## End-to-End-Encryption
 
 As responsibility of a developer and privacy of users, all data transfer between users should be e2e encrypted using Public and Private key pairs.
 
 <h1 align="center">
   <br>
-  <a href="https://www.preveil.com/blog/public-and-private-key/"><img height=200 src="https://res.cloudinary.com/weavemasology/image/upload/v1626255087/end-to-end-encryption-1024x550_uggyvs.png" alt="iωeave"></a>
+  <a href="https://www.preveil.com/blog/public-and-private-key/"><img src="https://res.cloudinary.com/weavemasology/image/upload/v1626255087/end-to-end-encryption-1024x550_uggyvs.png" alt="iωeave"></a>
 </h1>
 
 Public key files are stored on the users encryption table while private keys are only sent once at login. 
 Users could fetch the public key associated with the user they want to send messages to. 
 Authenticated users can get their private keys at login only once and rotated at every login.
-As a good practice, one should check timestamp on public key of user before sending a new message. 
+As a good practice, one should check timestamp on public key of user before sending a new message to get the latest user public key.
 
 ## Guides
 
