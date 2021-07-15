@@ -4,6 +4,17 @@ process.argv.forEach(function (val, index, array) {
     args[valsplit[0]] = valsplit[1]
 });
 const randomMessages = require("random-messages-generator");
+const io = require("socket.io-client");
+const jwt = args['--jwt']
+const socket = io(`http://127.0.0.1:8000`, {
+    extraHeaders: { Authorization: `Bearer ${jwt}` }
+});
+const die = setTimeout(function () {
+    console.log("Auth failed. No Response from server");
+    console.log("Bye Bye!")
+    process.exit(1)
+}, 10000);
+
 // node .\messageSender.js --user_id=<ID> --jwt=<JWT FROM SERVER> --receiver=<PhoneNo> --msg=<TEXT> (Optional)
 //----------------------------------------- CONFIGURATION BLOCK. 
 __main__();
