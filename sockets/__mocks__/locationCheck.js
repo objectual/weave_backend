@@ -30,9 +30,7 @@ function __main__(user_id) {
                 clearTimeout(die);
                 console.log("Connection Authorized: ", message)
                 socketListeners()
-                if (message.data.handshake == true) {
-                    startLocationUpdating(user_id)
-                }
+                startLocationUpdating(user_id) 
             });
         });
     } catch (e) {
@@ -58,7 +56,7 @@ function startLocationUpdating(user_id) {
 }
 function socketListeners() {
     console.log("Messages listener attached")
-    socket.on('message', message => {
+    socket.on('info', message => {
         console.log("Message received: ", message)
     });
 }

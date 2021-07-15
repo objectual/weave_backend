@@ -2,8 +2,7 @@ let args = {}
 process.argv.forEach(function (val, index, array) {
     let valsplit = val.split("=")
     args[valsplit[0]] = valsplit[1]
-});
-const randomLocation = require('random-location')
+}); 
 const io = require("socket.io-client");
 const jwt = args['--jwt']
 const socket = io(`http://127.0.0.1:8000`, {
@@ -27,9 +26,7 @@ function __main__(user_id) {
                 clearTimeout(die);
                 console.log("Connection Authorized: ", message)
                 socketListeners()
-                if (message.data.handshake == true) {
-                    consumerListeners()
-                }
+                consumerListeners()
             });
         });
     } catch (e) {
@@ -40,13 +37,13 @@ function __main__(user_id) {
 
 function consumerListeners() {
     console.log("Consumer listener attached")
-    socket.on('consumer', message => { // Background
-        console.log("Message from Kafka received: ", message.message.value.toString())
+    socket.on('message', message => { // Background
+        console.log("Message from Kafka received: ", message)
     }); 
 }
 function socketListeners() {
     console.log("Messages listener attached")
-    socket.on('message', message => {
+    socket.on('info', message => {
         console.log("Message received: ", message)
     });
     socket.on('error', message => {

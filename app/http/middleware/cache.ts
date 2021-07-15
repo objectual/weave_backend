@@ -22,7 +22,8 @@ export const CacheMiddleware = new class CacheMiddleware {
                         }
                         // Update user trend +1;
                         RedisService.getData(`${id}|user|analytics|search`).then(data =>
-                            RedisService.setData(data !== null ? _.toInteger(data) + 1 : 1, `${id}|user|analytics|search`, 86400).catch((error) => { throw error })
+                            // Trending user record for 24 hours
+                            RedisService.setData(data !== null ? _.toInteger(data) + 1 : 1, `${id}|user|analytics|search`, 24 * 60 * 60 * 1000).catch((error) => { throw error })
                         )
                         RedisService.searchData(`*${id}|user`).then(users => {
                             if (users.length > 0) {

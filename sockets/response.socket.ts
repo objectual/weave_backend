@@ -1,10 +1,11 @@
 import * as _ from "lodash";
+import { IMessage } from "./chat.socket";
 interface ISocketEmit {
     text: string,
-    data: {
-        handshake?: boolean,
-        users?: ISocketUserLocation[],
+    message?: IMessage
+    data?: {
         user: Object | string,
+        users?: ISocketUserLocation[],
         blockedByMe?: string[],
         blockedByOthers?: string[],
         lat?: number,
@@ -36,8 +37,12 @@ export class ResponseSockets {
         return this.emit("error", { text: msg, data });
     }
 
-    message(msg: ISocketEmit['text'], data: ISocketEmit['data']) {
-        return this.emit("message", { text: msg, data });
+    message(msg: ISocketEmit['text'], data: ISocketEmit['message']) {
+        return this.emit("message", { text: msg, message: data });
+    }
+
+    info(msg: ISocketEmit['text'], data: ISocketEmit['data']) {
+        return this.emit("info", { text: msg, data });
     }
 
     authorized(msg: ISocketEmit['text'], data: ISocketEmit['data']) {

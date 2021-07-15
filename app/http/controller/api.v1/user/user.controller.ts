@@ -16,6 +16,7 @@ export class User {
             let page = _.toInteger(req.query.page);
             let { key, id } = req.query;
             if (id != null && id != "" && id != undefined) {
+                // Searching user by ID
                 let checkInMyList = _.indexOf(req['user'].data.blockedByMe, id)
                 let checkInOthersList = _.indexOf(req['user'].data.blockedByOthers, id)
                 if (checkInMyList == -1 || checkInOthersList == -1) {

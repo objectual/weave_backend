@@ -9,9 +9,7 @@
   <a href="#installation">Installation</a> •
   <a href="#updating">Updating</a> •
   <a href="#features">Features</a> • 
-  <a href="#wiki">Wiki</a> •  
-  <a href="#end-to-end-encryption">End2End Encryption</a> •  
-  <a href="#guides">Guides</a> •  
+  <a href="#wiki">Wiki</a> •     
   <a href="#support">Support</a> • 
 </p>
 
@@ -97,7 +95,7 @@ This _config_ is **updated** (at a random time), so make sure you **come back** 
 
 Do you **need some help**? Check the project API doc from the [View Published Doc](https://documenter.getpostman.com/view/15958771/TzY69EUQ).
 
-## End-to-End-Encryption
+### End-to-End-Encryption
 
 As responsibility of a developer and privacy of users, all data transfer between users should be e2e encrypted using Public and Private key pairs.
 
@@ -111,28 +109,44 @@ Users could fetch the public key associated with the user they want to send mess
 Authenticated users can get their private keys at login only once and rotated at every login.
 As a good practice, one should check timestamp on public key of user before sending a new message to get the latest user public key.
 
-## Guides
+### TLDR;
 
-This explains how you as the developer can test the 
+This explains how you as the developer can test the. All these sockets are jwt protected. Make sure you're logged in the system and the JWT is not expired.
 
 **Location Service**
 - User location update
-To test this, open `sockets/__mocks__` folder and run `node locationCheck.js --user_id= <USER ID> --jwt= <SESSION JWT>`
+To test this, open `sockets/__mocks__` folder and run `node locationCheck.js --user_id=<USER ID> --jwt=<SESSION JWT>`
 - User get other nearby users if they are in a certain range
-To test this, open `sockets/__mocks__` folder and run `node nearbyUsers.js --user_id= <USER ID> --jwt= <SESSION JWT>`
+To test this, open `sockets/__mocks__` folder and run `node nearbyUsers.js --user_id=<USER ID> --jwt=<SESSION JWT>`
 
-**Chat**
+**Chat Basics**
 
 These scenarios apply for all types of messages i.e (Text, Files, Voice Notes, Visual Media).
-Non-Text based messages are first stored on a storage system such as *S3* *FireStore* *Cloudinary* and the public media link is sent as the message. The chat system will store that media for 30 days only.
+Non-Text based messages are first stored on a storage system such as *S3*, *FireStore*, *Cloudinary* and the public media link is sent as the message. The chat system will store that media for 30 days only.
 
 There are 3 presence phases in this. Each for when a different user presence is set i.e *ONLINE*, *AWAY*, *OFFLINE*. And 2 main message states i.e *DELIVERED* (✓D), *READ* (✓R).
 
 By default, every message that is sent to any `USER` or `GROUP` it is marked with the *SENT* (✓).
 
-- **ONLINE** means the user is present in the app and when a message is received a **DELIVERED** action is performed. When the user is in a chat room, a **READ** action is performed on that message. If the **READ** action is ignored, the other user/s will not know the message is seen
-- **AWAY** means the app is in background or killed, the recipient is fired a push notification to his FCM and a **DELIVERED** action is performed to notify other user/s about the message state 
-- **OFFLINE** mean the network connection is down, messages are fired to the FCM and collected on a temporary 30 day storage. When network connection is restored, steps from **AWAY** are performed and message store is cleared. 
+- There will be a `date` value in UNIX Timestamp on user presence data for when the data was set.
+- **ONLINE** presence is stored in *REDIS* for 1 Hour and updates automatically at every activity performed.
+- If the user disconnects the socket session, the presence value is updated to **AWAY** for 72 Hour and `date` can be used as `last seen`.
+- If the system returns `null` in presence data, that means the user is **OFFLINE** for longer than the system can hold record of.
+
+**ONLINE**
+
+- Means the user is present in the app and when a message is received a **DELIVERED** action is performed. 
+- When the user is in a chat room, a **READ** action is performed on that message. 
+- If the **READ** action is ignored, the other user/s will not know the message is seen.
+
+**AWAY** 
+
+- Means the app is in background or killed, the recipient is fired a push notification to his FCM and a **DELIVERED** action is performed to notify other user/s about the message state.
+
+**OFFLINE**
+
+- Mean the network connection is down, messages are fired to the FCM and collected on a temporary 30 day storage.
+- When network connection is restored, steps from **AWAY** are performed and message store is cleared. 
 
 
 ## Support

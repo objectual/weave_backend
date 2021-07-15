@@ -15,7 +15,7 @@ const die = setTimeout(function () {
     process.exit(1)
 }, 10000);
 
-// node .\locationCheck.js --user_id=<ID> --jwt=<JWT FROM SERVER>
+// node .\nearbyUsers.js --user_id=<ID> --jwt=<JWT FROM SERVER>
 __main__(args['--user_id'])
 //----------------------------------------- CONFIGURATION BLOCK. 
 
@@ -27,9 +27,7 @@ function __main__(user_id) {
                 clearTimeout(die);
                 console.log("Connection Authorized: ", message)
                 socketListeners()
-                if (message.data.handshake == true) {
-                    startNearbyUsers(user_id)
-                }
+                startNearbyUsers(user_id) 
             });
         });
     } catch (e) {
@@ -53,7 +51,7 @@ function socketListeners() {
 
         process.exit(1)
     });
-    socket.on('message', message => {
+    socket.on('info', message => {
         console.log("Message received: ", message)
 
         process.exit(1)

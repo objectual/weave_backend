@@ -90,7 +90,8 @@ export class Authentication {
                                 success.raw = { existing: true, approved: false }
                             }
                             if (existing && approved) {
-                                userService.redisUpdateUser(user)
+                                // SETS USERS TO THE REDIS DATASET FOR SOCKET AND LOW LATENCY USER FIND
+                                userService.redisUpdateUser(user) // 72 Hours user set
                                 success.msg = "Logged in successfully."
                                 success.status = 200
                                 success.raw = { existing: true, approved: true }

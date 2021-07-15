@@ -4,15 +4,17 @@ import { UserService } from "../app/http/services/user.service";
 import { ISocketUserLocation, ResponseSockets } from "./response.socket";
 export class LocationSockets {
     private _socket
+    private readonly response: ResponseSockets
     constructor(socket) {
         this._socket = socket
+        this.response = new ResponseSockets(this._socket)
     }
 
     get routes() {
         this._socket.on("location-update", (data, callback) => {
             let { user_id, lat, long } = data
             RedisService.setData({ lat, long, range: this._socket['user'].profile.locationRange, locationVisibility: this._socket['user'].profile.locationVisibility }, `${user_id}|location`, 0)
-            new ResponseSockets(this._socket).message(`Location updated`, { user: user_id, lat, long })
+            this.response.info(`Location updated`, { user: user_id, lat, long })
             callback();
         })
 
@@ -23,10 +25,10 @@ export class LocationSockets {
             let myLocation = _.filter(userLocations, function (x) { return x.id == user_id })[0]
             //THINGS TODO
             /*
-            1. Nearby find algorithm
-            2. Filter users not in their visibility range
-            3. Update nearby data
-            */
+                1. Nearby find algorithm
+                2. Filter users not in their visibility range
+                3. Update nearby data
+                */
             let users = await this.getNearbyUsers(userLocations, myLocation.lat, myLocation.long)
             users = _.filter(users, u => {
                 let checkInMyList = _.indexOf(this._socket['blockedByMe'], u.data.id)
@@ -35,7 +37,7 @@ export class LocationSockets {
                     return u;
                 }
             })
-            new ResponseSockets(this._socket).locationUsers("Nearby Users", { user: this._socket['user'], users: users })
+            this.response.locationUsers("Nearby Users", { user: this._socket['user'], users: users })
             callback();
         })
         return this._socket
