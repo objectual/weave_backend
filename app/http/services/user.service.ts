@@ -203,9 +203,6 @@ export class UserService {
                                         }
                                     })
                                     .catch(error => reject(error))
-                            } else if (code == 99 && process.env.NODE_ENV == "development") {
-                                // I forgot why this is here...
-                                reject("Invalid code")
                             } else {
                                 reject("Code does not match the code sent to your phone")
                             }

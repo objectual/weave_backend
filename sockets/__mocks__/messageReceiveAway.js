@@ -2,7 +2,7 @@ let args = {}
 process.argv.forEach(function (val, index, array) {
     let valsplit = val.split("=")
     args[valsplit[0]] = valsplit[1]
-}); 
+});
 const io = require("socket.io-client");
 const jwt = args['--jwt']
 const socket = io(`http://127.0.0.1:8000`, {
@@ -25,6 +25,10 @@ function __main__(user_id) {
                 // If you don't get a response from this, you ARE NOT CONNECTED TO THE SYSTEM
                 clearTimeout(die);
                 console.log("Connection Authorized: ", message)
+
+                // Updating my public key
+                fs.writeFileSync(`./keys/${message.user.profile.phoneNo}.pub`, Buffer.from(message.user.encryption.pub, 'base64'));
+
                 socketListeners()
                 consumerListeners()
             });
@@ -39,7 +43,11 @@ function consumerListeners() {
     console.log("Consumer listener attached")
     socket.on('message', message => { // Background
         console.log("Message from Kafka received: ", message)
-    }); 
+
+        // Updating receiver's public key 
+        // fs.writeFileSync(`./keys/${args['--receiver']}.pbk`, Buffer.from(data.pub, 'base64'));
+        // NEED TO SEND BACK READ OR DELIVERED TO OTHER USER
+    });
 }
 function socketListeners() {
     console.log("Messages listener attached")

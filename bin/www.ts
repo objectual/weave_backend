@@ -1,5 +1,11 @@
 #!/usr/bin/env node
-
+console.info(`
+██     ██ ███████  █████  ██    ██ ███████ 
+██     ██ ██      ██   ██ ██    ██ ██      
+██  █  ██ █████   ███████ ██    ██ █████   
+██ ███ ██ ██      ██   ██  ██  ██  ██      
+ ███ ███  ███████ ██   ██   ████   ███████
+`)
 /**
  * Module dependencies.
  */
@@ -23,7 +29,7 @@ app.set("port", port);
 
 // production error handler
 // no stacktraces leaked to user
-app.use(function (err, req:Request, res:Response, next) {
+app.use(function (err, req: Request, res: Response, next) {
     fs.appendFile("access.log", `⌚ ${moment().format("DD-MM-YYYY hh:mm:ss a")} Uncaught Exception: ${err.stack} \n`, () => { });
     if (process.env.NODE_ENV == "production") {
         res.status(500).render(path.join(appRoot.path, "views/error/500.ejs"), { error: "Something went wrong!" })
@@ -41,8 +47,8 @@ require("../socks")(server) // Connecting all socks to app
  * Listen on provided port, on all network interfaces.
  */
 server.listen(port, function () {
-    connectDatabase();
     console.info(`⌚`, moment().format("DD-MM-YYYY hh:mm:ss a"));
+    connectDatabase();
     console.info(`✔️ Server Started (listening on PORT : ${port})`);
 });
 
