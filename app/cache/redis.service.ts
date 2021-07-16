@@ -8,13 +8,13 @@ export const RedisService = new class RedisService {
     connectCache(): createClient {
         // console.log("❗ Service Connecting to Redis...")
         let origin = {}
-        if (process.env.NODE_ENV == "production") {
-            origin = {
-                port: process.env.REDIS_PORT, // replace with your port
-                host: process.env.REDIS_HOST, // replace with your hostanme or IP address
-                password: process.env.REDIS_PASS, // replace with your password
-            }
-        }
+        // if (process.env.NODE_ENV == "production") { // ONLY USE IN PRODUCTION READY ENVIRONMENT
+        //     origin = {
+        //         port: process.env.REDIS_PORT, // replace with your port
+        //         host: process.env.REDIS_HOST, // replace with your hostanme or IP address
+        //         password: process.env.REDIS_PASS, // replace with your password
+        //     }
+        // }
         return createClient(origin);
     };
     constructor() {

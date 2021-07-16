@@ -9,7 +9,7 @@ export interface IMessage {
     pid?: IMessage['id'];
     to?: IUserProfile['profile']['phoneNo'];
     from: IUserProfile['profile']['phoneNo'];
-    value: string | IMessageState | IUserPresence;
+    value: string | IMessageState | IUserPresence; // value can be either a message, a message state or a user presence
     type: IMessageType;
     createdAt: number;
 }
@@ -66,7 +66,7 @@ export class ChatSockets {
             }]
         })
         console.log(`Sent ${JSON.stringify(result)}`)
-        this.response.message("message", data)
+        // this.response.message("message", data)
 
         // this.response.message("Message Sent", )
         // this._socket.emit("sent-subscriber", result)
@@ -104,9 +104,10 @@ export class ChatSockets {
                 } else {
                     console.log("SENDING FROM DATABASE")
 
-                    await RedisService.setData(user.profile, `${user.profile.phoneNo}|${user.profile.firstName}|${user.profile.lastName}|${user.userId}|user`, 0)
+                    await RedisService.setData(user.profile, `${user.profile.phoneNo}|${user.profile.firstName}|${user.profile.lastName}|${user.profile.userId}|user`, 0)
 
                     user['presence'] = await RedisService.getData(`${phone}|presence`)
+                    console.log(user)
                     callback(user);
                 }
             }

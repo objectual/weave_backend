@@ -76,7 +76,6 @@ function sendMessages(myPhoneNo) {
 
         let msg = args['--msg'] != null ? args['--msg'] : `${new Date().getTime() / 1000}`
         let enc_msg = encryptStringWithRsaPublicKey(msg, `./keys/${args['--receiver']}.pub`)
-        console.log("Enc msg: ", enc_msg)
 
         setInterval(() => {
             socket.emit('message', {
@@ -103,31 +102,58 @@ function getUserPresence(phoneNo, callback) {
 }
 function consumerListeners(myPhoneNo, privateKeyPath) {
     console.log("Consumer listener attached")
-    socket.on('message', message => { // Background
-        console.log(message) // The system will throw back messages whether fired my user or other users
-        if (message.message.to == myPhoneNo) {
+    socket.on('message', message => { // Background 
+        /* SAMPLE RESPONSE
+        {
+          text: 'message',
+          message: '{"value":"gyApweZu6/Cy8ag94q8RVdjlSAtIxk242RBse/XPDMbEjERdTyDJmY855El6R+e+Gn98d+Q+djGIzJtCpsqIynZS4tRWM52HWqIjvpyvFY3yV3WvtGO0ZCtzSuhAX40ZCOz4F2AXPUvRj5fLV6awctpsW46BdyLXw9CKDeXpp4Q=","type":"TEXT","to":"923343664550","from":"923323070980","id":"5275cf9c-a235-40c5-a562-b3a1fadc9b19","createdAt":1626461272.564}',
+          time: 1626461272592
+        }
+        */
+        message = JSON.parse(message.message)
+        if (message.to == myPhoneNo) {
             // To check if there is a message from any other users.
-            console.log("ENC TEXT: ", message.message.value)
-            let decn_msg = decryptStringWithRsaPrivateKey(message.message.value, privateKeyPath)
-            console.log("Message from Kafka received: ", message, decn_msg)
-            if (message.message.type == "TEXT" || message.message.type == "MEDIA") {
+            let decn_msg = decryptStringWithRsaPrivateKey(message.value, privateKeyPath)
+            console.log("Message from Kafka received: ", message, "Decrypted: ", decn_msg)  // <-- This is the actual item to save 
+            if (message.type == "TEXT" || message.type == "MEDIA") {
                 // NEED TO SEND BACK READ OR DELIVERED TO OTHER USER
 
                 // get presence of message sender
-                getUserPresence(message.message.from, data => {
-                    console.log(data)
-                    // Updating receiver's public key 
-                    fs.writeFileSync(`./keys/${message.message.from}.pub`, Buffer.from(data.presence.pub, 'base64'));
+                getUserPresence(message.from, data => {
+                    /* SAMPLE RESPONSE
+                    {
+                      phoneNo: '923343664550',
+                      firstName: 'Suzy',
+                      lastName: 'Adams',
+                      city: 'london',
+                      country: 'uk',
+                      birthday: '1990-01-18T19:00:00.000Z',
+                      birthYearVisibility: true,
+                      about: 'Smarter than the world',
+                      profileImage: 'https://res.cloudinary.com/weavemasology/image/upload/v1623680410/images/user_wghiyv.png',
+                      locationRange: 200,
+                      locationVisibility: true,
+                      trend: 0,
+                      presence: {
+                        date: 1626460980.824,
+                        presence: 'ONLINE',
+                        pub: 'LS0tLS1CRUdJTiBSU0EgUFVCTElDIEtFWS0tLS0tCk1JR0pBb0dCQU5YQmU4M3RLM3cxS2FzWFdXYjRSU0NkUDhyK3pTek12Z3ljY2laMVkzSktqWnF4YnpQYTRoQWEKTkwwd2lTc1RRSFVEVXRxeGYwalJiUkRtemRSVm1ZeEhBenJraFg5bU94SGJJM2RBdjR5djdRWCtsZG5KM2wxQwo2NGZBazVyZEE0QlkxczVmNmdGWHA0L3RwNTQ3cmpGSHVsdm1oT0w2VjhIQWpKckFjOUY1QWdNQkFBRT0KLS0tLS1FTkQgUlNBIFBVQkxJQyBLRVktLS0tLQo='
+                      }
+                    }
+                    */
 
-                    let enc_msg = encryptStringWithRsaPublicKey("DELIVERED", `./keys/${message.message.from}.pub`)
-                    console.log("Enc msg: ", enc_msg)
+                    // Updating receiver's public key 
+                    fs.writeFileSync(`./keys/${message.from}.pub`, Buffer.from(data.presence.pub, 'base64'));
+
+                    let enc_msg = encryptStringWithRsaPublicKey("DELIVERED", `./keys/${message.from}.pub`)
 
                     socket.emit('message', {
-                        topic: message.message.from,
+                        topic: message.from,
                         data: JSON.stringify({
+                            pid: message.id, // Need to attach this broadcast which message received state change
                             value: enc_msg,
                             type: "STATE",
-                            to: message.message.from,
+                            to: message.from,
                             from: myPhoneNo
                         })
                     }, (error) => {
@@ -136,6 +162,7 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
                         }
                     });
                 })
+
             }
         }
     });
