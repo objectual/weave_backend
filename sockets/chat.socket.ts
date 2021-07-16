@@ -76,7 +76,8 @@ export class ChatSockets {
         this.observer(this._socket['user'].profile.phoneNo, this._socket['user'].profile.userId)
 
         this._producer.connect()
-        this._socket.on("message", (topic: string, data: IMessage, callback) => {
+        this._socket.on("message", ({ topic, data }, callback) => {
+            data = JSON.parse(data)
             data['id'] = uuidv4();
             data['createdAt'] = new Date().getTime() / 1000;
 
@@ -86,18 +87,23 @@ export class ChatSockets {
 
         this._socket.on("presence", async (phone, callback) => {
             // This is used to get the presence of other users
+            console.log(phone)
             let users = await RedisService.searchData(`${phone}|*|user`)
             let user;
             if (users.length > 0) {
+                console.log("SENDING FROM REDIS")
                 user = _.clone(users[0])
                 user['presence'] = await RedisService.getData(`${phone}|presence`)
+                console.log(user)
                 callback(user);
             } else {
                 const userService = new UserService()
-                user = await userService.findOne({ profile: { phoneNo: phone }, blocked: false }).catch(msg => this.response.error(msg, null))
+                user = await userService.findOne({ profile: { phoneNo: phone }, blocked: false }).catch(msg => this.response.error(msg.message, null))
                 if (user.length == 0 || user == null) {
                     this.response.error("User not found", null)
                 } else {
+                    console.log("SENDING FROM DATABASE")
+
                     await RedisService.setData(user.profile, `${user.profile.phoneNo}|${user.profile.firstName}|${user.profile.lastName}|${user.userId}|user`, 0)
 
                     user['presence'] = await RedisService.getData(`${phone}|presence`)

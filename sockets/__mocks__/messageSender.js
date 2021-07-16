@@ -5,6 +5,7 @@ process.argv.forEach(function (val, index, array) {
 });
 const randomMessages = require("random-messages-generator");
 const io = require("socket.io-client");
+const fs = require("fs");
 const jwt = args['--jwt']
 const socket = io(`http://127.0.0.1:8000`, {
     extraHeaders: { Authorization: `Bearer ${jwt}` }
@@ -16,13 +17,16 @@ const die = setTimeout(function () {
 }, 10000);
 var crypto = require("crypto");
 var path = require("path");
-var fs = require("fs");
 
 var encryptStringWithRsaPublicKey = function (toEncrypt, relativeOrAbsolutePathToPublicKey) {
     var absolutePath = path.resolve(relativeOrAbsolutePathToPublicKey);
     var publicKey = fs.readFileSync(absolutePath, "utf8");
     var buffer = Buffer.from(toEncrypt);
-    var encrypted = crypto.publicEncrypt(publicKey, buffer);
+    var encrypted = crypto.publicEncrypt({
+        key: publicKey,
+        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        oaepHash: "sha256",
+    }, buffer);
     return encrypted.toString("base64");
 };
 
@@ -30,7 +34,12 @@ var decryptStringWithRsaPrivateKey = function (toDecrypt, relativeOrAbsolutePath
     var absolutePath = path.resolve(relativeOrAbsolutePathtoPrivateKey);
     var privateKey = fs.readFileSync(absolutePath, "utf8");
     var buffer = Buffer.from(toDecrypt, "base64");
-    var decrypted = crypto.privateDecrypt(privateKey, buffer);
+    var decrypted = crypto.privateDecrypt({
+        key: privateKey,
+        passphrase: 'We@vE', // KEEP THIS A SECRET
+        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        oaepHash: "sha256",
+    }, buffer);
     return decrypted.toString("utf8");
 };
 
@@ -44,13 +53,13 @@ function __main__(user_id) {
                 // If you don't get a response from this, you ARE NOT CONNECTED TO THE SYSTEM
                 clearTimeout(die);
                 console.log("Connection Authorized: ", message)
-                
+
                 // Updating my public key
-                fs.writeFileSync(`./keys/${message.user.profile.phoneNo}.pub`, Buffer.from(data.pub, 'base64'));
+                fs.writeFileSync(`./keys/${message.data.user.profile.phoneNo}.pub`, Buffer.from(message.data.user.encryption.pub, 'base64'));
 
                 socketListeners()
-                consumerListeners()
-                sendMessages(message.user)
+                consumerListeners(message.data.user.profile.phoneNo, `./keys/${message.data.user.profile.phoneNo}`)
+                sendMessages(message.data.user.profile.phoneNo)
             });
         });
     } catch (e) {
@@ -58,32 +67,77 @@ function __main__(user_id) {
         process.exit(1)
     }
 }
-function sendMessages(myuser) {
+function sendMessages(myPhoneNo) {
     console.log("Message sender started...")
-    socket.emit("presence", (args['--receiver'], (data) => {
-        
+    getUserPresence(args['--receiver'], data => {
+        console.log(data)
         // Updating receiver's public key to sign message with their key
-        fs.writeFileSync(`./keys/${args['--receiver']}.pub`, Buffer.from(data.pub, 'base64'));
+        fs.writeFileSync(`./keys/${args['--receiver']}.pub`, Buffer.from(data.presence.pub, 'base64'));
 
-        // setInterval(() => {
-        //     socket.emit('message', {
-        //         topic: args['--receiver'],
-        //         data: {
-        //             value: args['--msg'] != null ? args['--msg'] : randomMessages.randomMsg(),
-        //             type: "TEXT"
-        //         }
-        //     }, (error) => {
-        //         if (error) {
-        //             console.log(error);
-        //         }
-        //     });
-        // }, 100 * 1000) //sec to ms
-    }))
+        let msg = args['--msg'] != null ? args['--msg'] : `${new Date().getTime() / 1000}`
+        let enc_msg = encryptStringWithRsaPublicKey(msg, `./keys/${args['--receiver']}.pub`)
+        console.log("Enc msg: ", enc_msg)
+
+        setInterval(() => {
+            socket.emit('message', {
+                topic: args['--receiver'],
+                data: JSON.stringify({
+                    value: enc_msg,
+                    type: "TEXT",
+                    to: args['--receiver'],
+                    from: myPhoneNo
+                })
+            }, (error) => {
+                if (error) {
+                    console.log(error);
+                }
+            });
+        }, 20 * 1000) //sec to ms 
+    })
 }
-function consumerListeners() {
+
+function getUserPresence(phoneNo, callback) {
+    socket.emit("presence", phoneNo, (data) => {
+        return callback(data)
+    })
+}
+function consumerListeners(myPhoneNo, privateKeyPath) {
     console.log("Consumer listener attached")
     socket.on('message', message => { // Background
-        console.log("Message from Kafka received: ", message)
+        console.log(message) // The system will throw back messages whether fired my user or other users
+        if (message.message.to == myPhoneNo) {
+            // To check if there is a message from any other users.
+            console.log("ENC TEXT: ", message.message.value)
+            let decn_msg = decryptStringWithRsaPrivateKey(message.message.value, privateKeyPath)
+            console.log("Message from Kafka received: ", message, decn_msg)
+            if (message.message.type == "TEXT" || message.message.type == "MEDIA") {
+                // NEED TO SEND BACK READ OR DELIVERED TO OTHER USER
+
+                // get presence of message sender
+                getUserPresence(message.message.from, data => {
+                    console.log(data)
+                    // Updating receiver's public key 
+                    fs.writeFileSync(`./keys/${message.message.from}.pub`, Buffer.from(data.presence.pub, 'base64'));
+
+                    let enc_msg = encryptStringWithRsaPublicKey("DELIVERED", `./keys/${message.message.from}.pub`)
+                    console.log("Enc msg: ", enc_msg)
+
+                    socket.emit('message', {
+                        topic: message.message.from,
+                        data: JSON.stringify({
+                            value: enc_msg,
+                            type: "STATE",
+                            to: message.message.from,
+                            from: myPhoneNo
+                        })
+                    }, (error) => {
+                        if (error) {
+                            console.log(error);
+                        }
+                    });
+                })
+            }
+        }
     });
 }
 function socketListeners() {

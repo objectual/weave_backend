@@ -228,11 +228,11 @@ export class UserService {
             generateKeyPair('rsa', {
                 modulusLength: 1024,
                 publicKeyEncoding: {
-                    type: 'spki',
+                    type: 'pkcs1',
                     format: 'pem'
                 },
                 privateKeyEncoding: {
-                    type: 'pkcs8',
+                    type: 'pkcs1',
                     format: 'pem',
                     cipher: 'aes-256-cbc',
                     passphrase: process.env.PASSPHRASE
