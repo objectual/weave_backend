@@ -4,12 +4,12 @@
   "description": "",
   "main": "./lib/bin/www",
   "scripts": {
-    "start": "set NODE_ENV=production&&tsc&&node lib/bin/www",
-    "dev": "set NODE_ENV=development&&tsc-watch --onSuccess \"nodemon ./lib/bin/www\"",
+    "start": "set NODE_ENV=production&&tsc&&node bin/startup/www",
+    "dev": "set NODE_ENV=development&&tsc-watch --onSuccess \"nodemon ./bin/startup/www\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Ahmed Baig",
-  "license": "ISC",
+  "license": "ISC", 
   "dependencies": {
     "@prisma/client": "^2.22.0",
     "@types/moment": "^2.13.0",

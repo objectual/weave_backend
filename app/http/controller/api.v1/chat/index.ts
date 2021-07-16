@@ -4,16 +4,16 @@ const router = express.Router();
 
 
 class ChatRoutes {
-    get routes(){
+    get routes() {
         // Gets my active chat rooms
         router.get("/", new Chat().get);
-        
+
         // Creates a new chat room
         router.post("/", new Chat().post);
-        
+
         // Update details of room
         router.patch("/", new Chat().patch);
-        
+
         // Delete room
         router.delete("/", new Chat().delete);
         return router
@@ -21,4 +21,4 @@ class ChatRoutes {
 }
 
 Object.seal(ChatRoutes);
-export = ChatRoutes;
+export default ChatRoutes;

@@ -16,4 +16,4 @@ class EventRoutes {
     }
 }
 Object.seal(EventRoutes);
-export = EventRoutes;
+export default EventRoutes;

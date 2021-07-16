@@ -18,4 +18,4 @@ class AuthRoutes {
 }
 
 Object.seal(AuthRoutes);
-export = AuthRoutes;
+export default AuthRoutes;

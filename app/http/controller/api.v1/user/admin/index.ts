@@ -15,4 +15,4 @@ class UserAdminRoutes {
 }
 
 Object.seal(UserAdminRoutes);
-export = UserAdminRoutes;
+export default UserAdminRoutes;

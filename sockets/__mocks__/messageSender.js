@@ -62,7 +62,7 @@ function sendMessages(myuser) {
     console.log("Message sender started...")
     socket.emit("presence", (args['--receiver'], (data) => {
         
-        // Updating receiver's public key 
+        // Updating receiver's public key to sign message with their key
         fs.writeFileSync(`./keys/${args['--receiver']}.pub`, Buffer.from(data.pub, 'base64'));
 
         // setInterval(() => {

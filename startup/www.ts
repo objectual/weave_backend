@@ -47,23 +47,29 @@ require("../socks")(server) // Connecting all socks to app
  * Listen on provided port, on all network interfaces.
  */
 server.listen(port, function () {
-    console.info(`⌚`, moment().format("DD-MM-YYYY hh:mm:ss a"));
-    connectDatabase();
-    console.info(`✔️ Server Started (listening on PORT : ${port})`);
+    connectDatabase().then(() => {
+        console.info(`✔️ Server Started (listening on PORT : ${port})`);
+        console.info(`⌚`, moment().format("DD-MM-YYYY hh:mm:ss a"));
+    }).catch(() => {
+        server.close();
+        process.exit();
+    })
 });
 
 // run inside `async` function
 async function connectDatabase() {
-    try {
-        await prisma.$connect()
-        prisma.$disconnect()
-        console.info(`✔️ Database Safely Connected with (${process.env.DATABASE_URL})`);
-    } catch (err) {
-        console.info(`⌚`, moment().format("DD-MM-YYYY hh:mm:ss a"));
-        console.error("❗️ Could not connect to database...", err);
-        server.close();
-        process.exit();
-    }
+    return new Promise(async (resolve, reject) => {
+        try {
+            await prisma.$connect()
+            prisma.$disconnect()
+            console.info(`✔️ Database Safely Connected with (${process.env.DATABASE_URL})`);
+            return resolve(true)
+        } catch (err) {
+            console.info(`⌚`, moment().format("DD-MM-YYYY hh:mm:ss a"));
+            console.error("❗️ Could not connect to database...", err);
+            return reject(false)
+        }
+    })
 }
 
 /**

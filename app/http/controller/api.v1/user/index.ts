@@ -9,7 +9,7 @@ import { ConnectionValidationMiddleware } from '../../../validators/connection.v
 import { UserValidationMiddleware } from '../../../validators/user.validate';
 
 class UserRoutes {
-    get routes() { 
+    get routes() {
         router.get('/', AuthMiddleware.isApproved(), ConnectionValidationMiddleware.blockedUsersList(), CacheMiddleware.userSearch(), new User().get)
 
         router.put('/', UserValidationMiddleware.validateUserUpdate(), new User().update)
@@ -23,4 +23,4 @@ class UserRoutes {
     }
 }
 Object.seal(UserRoutes);
-export = UserRoutes;
+export default UserRoutes;

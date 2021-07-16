@@ -28,4 +28,4 @@ class ConnectionRoutes {
 }
 
 Object.seal(ConnectionRoutes);
-export = ConnectionRoutes;
+export default ConnectionRoutes;

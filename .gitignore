@@ -2,7 +2,7 @@
 
 # compiled output
 /dist
-/lib
+/bin
 /public
 /tmp
 /out-tsc
