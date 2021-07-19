@@ -22,6 +22,7 @@ export const RedisService = new class RedisService {
         console.info(`✔️ Service Connected to Redis`);
         client.on("error", function (error) {
             console.error("❗ ", error);
+            process.exit(1)
         });
     }
     setUserStateToken(auth: string, exp: number) {

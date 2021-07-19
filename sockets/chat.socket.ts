@@ -72,12 +72,59 @@ export class ChatSockets {
         // this._socket.emit("sent-subscriber", result)
     }
 
+    async getUser(phone: number): Promise<IUserProfile> {
+        return new Promise(async (resolve, reject) => {
+            const userService = new UserService()
+            const user = await userService.findOne({ profile: { phoneNo: phone }, blocked: false })
+            if (user == null) {
+                reject(null)
+            } else {
+                console.log("USER CALLED FROM DATABASE", phone)
+                await RedisService.setData(user.profile, `${user.profile.phoneNo}|${user.profile.firstName}|${user.profile.lastName}|${user.profile.userId}|user`, 0)
+
+                console.log(user)
+                resolve(user);
+            }
+        })
+    }
+
+    async updatePresenceRedis(user: IUserProfile, presence: string, date: number): Promise<void> {
+        RedisService.setData({ date, presence: presence, pub: user.encryption.pub }, `${user.profile.phoneNo}|presence`, 720 * 60 * 60 * 1000)
+    }
+
+    async checkPresence(phone) {
+        return new Promise(async (resolve, reject) => {
+            let presence = await RedisService.getData(`${phone}|presence`)
+            let user;
+            if (presence != null) {
+                // PRESENCE EITHER AWAY OR ONLINE 
+                resolve(presence);
+            } else {
+                // PRESENCE OFFLINE
+                user = await this.getUser(phone)
+                if (user == null) {
+                    reject(null)
+                }
+                presence = {
+                    date: null,
+                    presence: "OFFLINE",
+                    pub: user.encryption.pub
+                }
+                this.updatePresenceRedis(user, "OFFLINE", null)
+                presence(user);
+            }
+        })
+    }
+
     get routes() {
         this.observer(this._socket['user'].profile.phoneNo, this._socket['user'].profile.userId)
 
         this._producer.connect()
-        this._socket.on("message", ({ topic, data }, callback) => {
+        this._socket.on("message", async ({ topic, data }, callback) => {
+            // Check if message is stored in redis and remove if delivered | read state is received on pid message
             data = JSON.parse(data)
+            let presence = await this.checkPresence(data.to)
+            if(presence)
             data['id'] = uuidv4();
             data['createdAt'] = new Date().getTime() / 1000;
 
@@ -86,29 +133,31 @@ export class ChatSockets {
         })
 
         this._socket.on("presence", async (phone, callback) => {
-            // This is used to get the presence of other users
-            console.log(phone)
+            // This is used to get the presence of other users 
             let users = await RedisService.searchData(`${phone}|*|user`)
             let user;
             if (users.length > 0) {
                 console.log("SENDING FROM REDIS")
                 user = _.clone(users[0])
-                user['presence'] = await RedisService.getData(`${phone}|presence`)
-                console.log(user)
-                callback(user);
-            } else {
-                const userService = new UserService()
-                user = await userService.findOne({ profile: { phoneNo: phone }, blocked: false }).catch(msg => this.response.error(msg.message, null))
-                if (user.length == 0 || user == null) {
+                let presence = await this.checkPresence(phone)
+                if (presence == null) {
                     this.response.error("User not found", null)
                 } else {
-                    console.log("SENDING FROM DATABASE")
-
-                    await RedisService.setData(user.profile, `${user.profile.phoneNo}|${user.profile.firstName}|${user.profile.lastName}|${user.profile.userId}|user`, 0)
-
-                    user['presence'] = await RedisService.getData(`${phone}|presence`)
-                    console.log(user)
+                    user['presence'] = presence
                     callback(user);
+                }
+            } else {
+                user = await this.getUser(phone)
+                if (user == null) {
+                    this.response.error("User not found", null)
+                } else {
+                    let presence = await this.checkPresence(phone)
+                    if (presence == null) {
+                        this.response.error("User not found", null)
+                    } else {
+                        user['presence'] = presence
+                        callback(user);
+                    }
                 }
             }
         })

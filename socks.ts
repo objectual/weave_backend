@@ -62,7 +62,7 @@ module.exports = function (server) {
             socket.on('disconnect', async () => {
                 await consumer.disconnect()
                 await producer.disconnect()
-                RedisService.setData({ date: new Date().getTime() / 1000, presence: "AWAY", pub: socket['user'].encryption.pub }, `${socket['user'].profile.phoneNo}|presence`, 72 * 60 * 60 * 1000)
+                RedisService.setData({ date: new Date().getTime() / 1000, presence: "AWAY", pub: socket['user'].encryption.pub }, `${socket['user'].profile.phoneNo}|presence`, 720 * 60 * 60 * 1000)
                 console.log(`disconnected: ${socket['user'].profile.firstName} ${socket['user'].profile.lastName}`, socket.id)
             })
         }

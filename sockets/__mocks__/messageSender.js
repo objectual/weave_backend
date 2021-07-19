@@ -2,8 +2,7 @@ let args = {}
 process.argv.forEach(function (val, index, array) {
     let valsplit = val.split("=")
     args[valsplit[0]] = valsplit[1]
-});
-const randomMessages = require("random-messages-generator");
+}); 
 const io = require("socket.io-client");
 const fs = require("fs");
 const jwt = args['--jwt']
@@ -43,10 +42,10 @@ var decryptStringWithRsaPrivateKey = function (toDecrypt, relativeOrAbsolutePath
     return decrypted.toString("utf8");
 };
 
-// node .\messageSender.js --user_id=<ID> --jwt=<JWT FROM SERVER> --receiver=<PhoneNo> --msg=<TEXT> (Optional)
+// node .\messageSender.js --jwt=<JWT FROM SERVER> --receiver=<PhoneNo> --msg=<TEXT> (Optional)
 //----------------------------------------- CONFIGURATION BLOCK. 
 __main__();
-function __main__(user_id) {
+function __main__() {
     try {
         socket.on('connect', () => {
             socket.on('authorized', message => { // This is the successful connection point
@@ -145,13 +144,33 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
                     // Updating receiver's public key 
                     fs.writeFileSync(`./keys/${message.from}.pub`, Buffer.from(data.presence.pub, 'base64'));
 
-                    let enc_msg = encryptStringWithRsaPublicKey("DELIVERED", `./keys/${message.from}.pub`)
+                    // Mark message as delivered(✓D)
+                    let enc_msg_delivered = encryptStringWithRsaPublicKey("DELIVERED", `./keys/${message.from}.pub`)
 
                     socket.emit('message', {
                         topic: message.from,
                         data: JSON.stringify({
                             pid: message.id, // Need to attach this broadcast which message received state change
-                            value: enc_msg,
+                            value: enc_msg_delivered,
+                            type: "STATE",
+                            to: message.from,
+                            from: myPhoneNo
+                        })
+                    }, (error) => {
+                        if (error) {
+                            console.log(error);
+                        }
+                    });
+
+
+                    // Mark message as read(✓R)
+                    let enc_msg_read = encryptStringWithRsaPublicKey("READ", `./keys/${message.from}.pub`)
+
+                    socket.emit('message', {
+                        topic: message.from,
+                        data: JSON.stringify({
+                            pid: message.id, // Need to attach this broadcast which message received state change
+                            value: enc_msg_read,
                             type: "STATE",
                             to: message.from,
                             from: myPhoneNo

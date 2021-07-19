@@ -3,7 +3,7 @@ var crypto = require("crypto");
 var path = require("path");
 const fs = require("fs");
 
-
+// node encryptionCheck.js <MESSAGE> <PATH TO KEY>
 var encryptStringWithRsaPublicKey = function (toEncrypt, relativeOrAbsolutePathToPublicKey) {
     var absolutePath = path.resolve(relativeOrAbsolutePathToPublicKey);
     var publicKey = fs.readFileSync(absolutePath, "utf8");

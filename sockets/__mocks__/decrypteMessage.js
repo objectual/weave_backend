@@ -1,8 +1,9 @@
 
 var crypto = require("crypto");
 var path = require("path");
-const fs = require("fs");
-let toDecrypt = process.argv[2]
+const fs = require("fs"); 
+
+// node encryptionCheck.js <MESSAGE> <PATH TO KEY>
 var decryptStringWithRsaPrivateKey = function (toDecrypt, relativeOrAbsolutePathtoPrivateKey) {
     var absolutePath = path.resolve(relativeOrAbsolutePathtoPrivateKey);
     var privateKey = fs.readFileSync(absolutePath, "utf8");
@@ -16,4 +17,4 @@ var decryptStringWithRsaPrivateKey = function (toDecrypt, relativeOrAbsolutePath
     console.log("Decrypted: ", decrypted.toString())
     return decrypted.toString("utf8");
 };
-console.log(decryptStringWithRsaPrivateKey(toDecrypt, process.argv[3]))
+console.log(decryptStringWithRsaPrivateKey(process.argv[2], process.argv[3]))
