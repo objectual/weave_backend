@@ -124,7 +124,9 @@ export class ChatSockets {
             // Check if message is stored in redis and remove if delivered | read state is received on pid message
             data = JSON.parse(data)
             let presence = await this.checkPresence(data.to)
-            if(presence)
+            if(presence != "ONLINE"){
+                //Store message for 30 days
+            }
             data['id'] = uuidv4();
             data['createdAt'] = new Date().getTime() / 1000;
 
