@@ -4,6 +4,7 @@ import session from 'express-session';
 import RateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
 import { Request, Response } from "express"
+import xss from "xss";
 
 import path from "path";
 import cors from "cors";
@@ -43,6 +44,20 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser());
 
+// Body satinization for XSS
+app.use(function (req, res, next) {
+    var sanatizeBody = JSON.stringify(req.body);
+    var html = xss(sanatizeBody, {
+        stripIgnoreTag: true, // filter out all HTML not in the whilelist
+        stripIgnoreTagBody: ["script"], // the script tag is a special case, we need
+        // to filter out its content
+    });
+    const reqbody = JSON.parse(html);
+    req.body = reqbody;
+    next();
+});
+
+
 // create a write stream (in append mode) for system logger
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' })
 app.use(logger('common', { stream: accessLogStream }))
@@ -70,23 +85,20 @@ const rtL = new RateLimit({
     windowMs: 5 * 60 * 1000,
     expiry: 300,
     resetExpiryOnChange: true,
-    handler: function (req:Request, res:Response /*, next*/) {
-        // res.status(429).send({ success: false, msg: "Too any requests, please try again later" })
+    handler: function (req: Request, res: Response /*, next*/) {
         res.status(429).render(path.join(appRoot.path, "views/error/429.ejs"), { error: "Too any requests from your IP, please try again later" });
         return;
     },
-    // onLimitReached: function (req:Request, res:Response, optionsUsed) {
-    //     console.log("HERE Limit reached")
-    //     // res.status(429).send({ success: false, msg: "Going a little too fast. Your IP has been blocked for a minute" })
-    //     res.status(429).render(path.join(appRoot.path, "views/error/429.ejs"), { error: "Going a little too fast. Your IP has been blocked for 5 mins" });
-    //     return;
-    // }
+    onLimitReached: function (req: Request, res: Response, optionsUsed) {
+        res.status(429).render(path.join(appRoot.path, "views/error/429.ejs"), { error: "Going a little too fast. Your IP has been blocked for 5 mins" });
+        return;
+    }
 });
 // Route definitions
 app.use('/cache', slD, rtL, BrowserMiddleware.restrictedBrowser(), require('./app/cache'))
-app.use("/console", slD, rtL, require('./routes/console')); 
+app.use("/console", slD, rtL, require('./routes/console'));
 app.use("/api/v1", slD, rtL, BrowserMiddleware.restrictedBrowser(), new ApiRoutes().routes);
-app.post('/reset-limit', function (req:Request, res:Response) {
+app.post('/reset-limit', function (req: Request, res: Response) {
     slD.resetKey(req.ip)
     rtL.resetKey(req.ip)
     res.redirect(req.header('Referer') || '/');

@@ -29,11 +29,12 @@ export class ResponseSockets {
         this._socket = socket
     }
 
-    private emit(emitter, obj: ISocketEmit) {
+    private emit(emitter, obj: ISocketEmit) { 
         return this._socket.emit(emitter, { ...obj, time: Date.now() })
     }
 
     error(msg: ISocketEmit['text'], data: ISocketEmit['data']) {
+        console.log("SENDING ERROR", { text: msg, data })
         return this.emit("error", { text: msg, data });
     }
 

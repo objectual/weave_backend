@@ -14,6 +14,12 @@ export interface IMessage {
     createdAt: number;
 }
 
+interface IPresence {
+    date: number,
+    presence: string,
+    pub: string
+}
+
 enum IMessageType {
     media = "MEDIA", // used for media message URI
     info = "INFO", // used for user or system information
@@ -66,10 +72,6 @@ export class ChatSockets {
             }]
         })
         console.log(`Sent ${JSON.stringify(result)}`)
-        // this.response.message("message", data)
-
-        // this.response.message("Message Sent", )
-        // this._socket.emit("sent-subscriber", result)
     }
 
     async getUser(phone: number): Promise<IUserProfile> {
@@ -81,37 +83,37 @@ export class ChatSockets {
             } else {
                 console.log("USER CALLED FROM DATABASE", phone)
                 await RedisService.setData(user.profile, `${user.profile.phoneNo}|${user.profile.firstName}|${user.profile.lastName}|${user.profile.userId}|user`, 0)
-
-                console.log(user)
                 resolve(user);
             }
         })
     }
 
-    async updatePresenceRedis(user: IUserProfile, presence: string, date: number): Promise<void> {
+    async updatePresenceRedis(user: IUserProfile, presence: string, date: number = null): Promise<void> {
         RedisService.setData({ date, presence: presence, pub: user.encryption.pub }, `${user.profile.phoneNo}|presence`, 720 * 60 * 60 * 1000)
     }
 
-    async checkPresence(phone) {
+    async checkPresence(phone): Promise<IPresence> {
         return new Promise(async (resolve, reject) => {
             let presence = await RedisService.getData(`${phone}|presence`)
-            let user;
+
             if (presence != null) {
                 // PRESENCE EITHER AWAY OR ONLINE 
                 resolve(presence);
             } else {
                 // PRESENCE OFFLINE
-                user = await this.getUser(phone)
-                if (user == null) {
+                let user = await this.getUser(phone)
+                if (user == null || user.encryption == null) {
+                    console.log("Err in user", user)
                     reject(null)
+                } else {
+                    presence = {
+                        date: null,
+                        presence: "OFFLINE",
+                        pub: user.encryption.pub
+                    }
+                    this.updatePresenceRedis(user, "OFFLINE", null)
+                    presence(presence);
                 }
-                presence = {
-                    date: null,
-                    presence: "OFFLINE",
-                    pub: user.encryption.pub
-                }
-                this.updatePresenceRedis(user, "OFFLINE", null)
-                presence(user);
             }
         })
     }
@@ -121,46 +123,58 @@ export class ChatSockets {
 
         this._producer.connect()
         this._socket.on("message", async ({ topic, data }, callback) => {
-            // Check if message is stored in redis and remove if delivered | read state is received on pid message
-            data = JSON.parse(data)
-            let presence = await this.checkPresence(data.to)
-            if(presence != "ONLINE"){
-                //Store message for 30 days
-            }
-            data['id'] = uuidv4();
-            data['createdAt'] = new Date().getTime() / 1000;
+            try {
+                data = JSON.parse(data)
 
-            this.publisher(topic, data)
-            callback();
+                data['id'] = uuidv4();
+                data['createdAt'] = new Date().getTime() / 1000;
+
+                let presence = await this.checkPresence(data.to)
+
+                // Store message to store if user is not available
+                if (presence.presence != "ONLINE") {
+                    //Store message for 30 days
+                    console.log("Setting message to store", data.id)
+                    RedisService.setData(data, `${data.id}|${data.to}|${data.from}|message`, 720 * 60 * 60 * 1000)
+                }
+
+                // Check if message is stored in redis and remove if delivered | read state is received on pid message
+                if (data.type != "TEXT") {
+                    console.log("Setting message to store", data.pid)
+                    RedisService.searchAndDeleteKeys(`${data.pid}`)
+                }
+
+                this.publisher(topic, data)
+                callback();
+
+            } catch (error) {
+                this.response.error("There was error in your request", null)
+            }
         })
 
         this._socket.on("presence", async (phone, callback) => {
-            // This is used to get the presence of other users 
-            let users = await RedisService.searchData(`${phone}|*|user`)
-            let user;
-            if (users.length > 0) {
-                console.log("SENDING FROM REDIS")
-                user = _.clone(users[0])
-                let presence = await this.checkPresence(phone)
-                if (presence == null) {
-                    this.response.error("User not found", null)
-                } else {
+            try {
+                // This is used to get the presence of other users 
+                let users = await RedisService.searchData(`${phone}|*|user`)
+                let user;
+                if (users.length > 0) {
+                    console.log("SENDING FROM REDIS")
+                    user = _.clone(users[0])
+                    let presence = await this.checkPresence(phone)
                     user['presence'] = presence
                     callback(user);
-                }
-            } else {
-                user = await this.getUser(phone)
-                if (user == null) {
-                    this.response.error("User not found", null)
                 } else {
-                    let presence = await this.checkPresence(phone)
-                    if (presence == null) {
+                    user = await this.getUser(phone)
+                    if (user == null) {
                         this.response.error("User not found", null)
                     } else {
+                        let presence = await this.checkPresence(phone)
                         user['presence'] = presence
                         callback(user);
                     }
                 }
+            } catch (error) {
+                this.response.error("There was error in your request", null)
             }
         })
         return this._socket

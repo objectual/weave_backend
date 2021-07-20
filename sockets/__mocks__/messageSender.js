@@ -90,7 +90,7 @@ function sendMessages(myPhoneNo) {
                     console.log(error);
                 }
             });
-        }, 20 * 1000) //sec to ms 
+        }, 10 * 1000) //sec to ms 
     })
 }
 

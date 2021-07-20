@@ -1,7 +1,7 @@
 "use strict";
 import { PrismaClient } from '@prisma/client';
 import { IUserCreateProfile, IUserProfile } from "../models/user.model";
-import { IProfile, IProfileCreate } from '../models/profile.user.model';
+import { IProfileCreate } from '../models/profile.user.model';
 import { RedisService } from '../../cache/redis.service';
 import { generateKeyPair } from 'crypto';
 
@@ -11,7 +11,7 @@ const selectUser = {
     id: true,
     email: true,
     role: true,
-    encryption: true,
+    encryption: { select: { pub: true } },
     profile: {
         select: {
             phoneNo: true,

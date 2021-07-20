@@ -13,8 +13,8 @@ export class FriendsService {
     private prisma;
     select = {
         id: true,
-        user: { select: { encryption: true, profile: true } },
-        friend: { select: { encryption: true, profile: true } },
+        user: { select: { profile: true } },
+        friend: { select: { profile: true } },
         approved: true,
         createdAt: true,
         updatedAt: true,

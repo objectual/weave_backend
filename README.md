@@ -64,7 +64,7 @@ docker run -d -p 29092:29092 --name=kafka -e KAFKA_ZOOKEEPER_CONNECT=<IP>:32181 
 **KAFKA DASHBOARD**
 
 ```
-docker run -p 8080:8080 -e KAFKA_CLUSTERS_0_NAME=local -e KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=<IP>:29092 -d provectuslabs/kafka-ui:latest
+docker run -p 8080:8080 --name=kafka-dashboard -e KAFKA_CLUSTERS_0_NAME=local -e KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=<IP>:29092 -d provectuslabs/kafka-ui:latest
 ```
 ## Updating
 

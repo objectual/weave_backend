@@ -15,7 +15,9 @@ import { ChatSockets } from "./sockets/chat.socket";
 import { RedisService } from "./app/cache/redis.service";
 
 module.exports = function (server) {
-    const io = new Server(server)
+    const io = new Server(server, {
+        cors: {origin: "http://localhost:8000"    }
+    })
     const kafka = new Kafka({
         clientId: "messageservice",
         brokers: [`${process.env.IP}:29092`]

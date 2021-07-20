@@ -66,10 +66,12 @@ export class Authentication {
                             // myUserService.redisSetUserData(token, moment(moment().add(48, "hours")).fromNow_seconds())
                             req['session'].auth = token;
                             if (!uniqueGCM) {
+                                let sec = user.encryption.sec
                                 user = await userService.findOneAndUpdate(
                                     { id: user.id },
                                     { gcm: { create: [{ id: gcm_id, platform }] } }
                                 )
+                                user.encryption.sec = sec
                             }
                             // Stuff I don't want to leave in redis
                             delete user.blocked;
