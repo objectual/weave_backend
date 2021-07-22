@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { RedisService } from "../app/cache/redis.service";
 import { IUserProfile } from "../app/http/models/user.model";
 import { UserService } from "../app/http/services/user.service";
-import { ISocketUserLocation, ResponseSockets } from "./response.socket";
+import { ResponseSockets } from "./response.socket";
 export interface IMessage {
     id: string;
     pid?: IMessage['id'];
@@ -58,6 +58,14 @@ export class ChatSockets {
         console.log("Consumer started for: ", topic, id)
         await this._consumer.run({
             eachMessage: async result => {
+
+                // Check if message is stored in redis and remove if delivered | read state is received on pid message
+                let data = JSON.parse(result.message.value.toString())
+                RedisService.searchAndDeleteKeys(`${data.id}`)
+                if (data.pid != null) { 
+                    RedisService.searchAndDeleteKeys(`${data.pid}`)
+                }
+
                 this.response.message("message", result.message.value.toString())
             }
         })
@@ -112,7 +120,7 @@ export class ChatSockets {
                         pub: user.encryption.pub
                     }
                     this.updatePresenceRedis(user, "OFFLINE", null)
-                    presence(presence);
+                    resolve(presence);
                 }
             }
         })
@@ -136,12 +144,6 @@ export class ChatSockets {
                     //Store message for 30 days
                     console.log("Setting message to store", data.id)
                     RedisService.setData(data, `${data.id}|${data.to}|${data.from}|message`, 720 * 60 * 60 * 1000)
-                }
-
-                // Check if message is stored in redis and remove if delivered | read state is received on pid message
-                if (data.type != "TEXT") {
-                    console.log("Setting message to store", data.pid)
-                    RedisService.searchAndDeleteKeys(`${data.pid}`)
                 }
 
                 this.publisher(topic, data)

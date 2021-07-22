@@ -73,10 +73,10 @@ function sendMessages(myPhoneNo) {
         // Updating receiver's public key to sign message with their key
         fs.writeFileSync(`./keys/${args['--receiver']}.pub`, Buffer.from(data.presence.pub, 'base64'));
 
-        let msg = args['--msg'] != null ? args['--msg'] : `${new Date().getTime() / 1000}`
-        let enc_msg = encryptStringWithRsaPublicKey(msg, `./keys/${args['--receiver']}.pub`)
-
         setInterval(() => {
+            let msg = args['--msg'] != null ? args['--msg'] : `${new Date().getTime() / 1000}`
+            let enc_msg = encryptStringWithRsaPublicKey(msg, `./keys/${args['--receiver']}.pub`)
+    
             socket.emit('message', {
                 topic: args['--receiver'],
                 data: JSON.stringify({
