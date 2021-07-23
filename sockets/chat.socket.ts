@@ -37,16 +37,16 @@ enum IUserPresence {
     offline = "OFFLINE",
     away = "AWAY"
 }
-export class ChatSockets {
-    private _socket
+
+class Chat {
     private _consumer
     private _producer
-    private readonly response: ResponseSockets
-    constructor(socket, consumer, producer) {
-        this._socket = socket
+    protected response: ResponseSockets
+    constructor(consumer, producer) {
         this._consumer = consumer
         this._producer = producer
-        this.response = new ResponseSockets(this._socket)
+
+        this._producer.connect()
     }
 
     async observer(topic: string, id: string) {
@@ -62,7 +62,7 @@ export class ChatSockets {
                 // Check if message is stored in redis and remove if delivered | read state is received on pid message
                 let data = JSON.parse(result.message.value.toString())
                 RedisService.searchAndDeleteKeys(`${data.id}`)
-                if (data.pid != null) { 
+                if (data.pid != null) {
                     RedisService.searchAndDeleteKeys(`${data.pid}`)
                 }
 
@@ -80,6 +80,31 @@ export class ChatSockets {
             }]
         })
         console.log(`Sent ${JSON.stringify(result)}`)
+    }
+
+    async checkPresence(phone): Promise<IPresence> {
+        return new Promise(async (resolve, reject) => {
+            let presence = await RedisService.getData(`${phone}|presence`)
+
+            if (presence != null) {
+                // PRESENCE EITHER AWAY OR ONLINE 
+                resolve(presence);
+            } else {
+                // PRESENCE OFFLINE
+                let user = await this.getUser(phone)
+                if (user == null || user.encryption == null) {
+                    reject(null)
+                } else {
+                    presence = {
+                        date: null,
+                        presence: "OFFLINE",
+                        pub: user.encryption.pub
+                    }
+                    this.updatePresenceRedis(user, "OFFLINE", null)
+                    resolve(presence);
+                }
+            }
+        })
     }
 
     async getUser(phone: number): Promise<IUserProfile> {
@@ -100,36 +125,20 @@ export class ChatSockets {
         RedisService.setData({ date, presence: presence, pub: user.encryption.pub }, `${user.profile.phoneNo}|presence`, 720 * 60 * 60 * 1000)
     }
 
-    async checkPresence(phone): Promise<IPresence> {
-        return new Promise(async (resolve, reject) => {
-            let presence = await RedisService.getData(`${phone}|presence`)
+}
 
-            if (presence != null) {
-                // PRESENCE EITHER AWAY OR ONLINE 
-                resolve(presence);
-            } else {
-                // PRESENCE OFFLINE
-                let user = await this.getUser(phone)
-                if (user == null || user.encryption == null) {
-                    console.log("Err in user", user)
-                    reject(null)
-                } else {
-                    presence = {
-                        date: null,
-                        presence: "OFFLINE",
-                        pub: user.encryption.pub
-                    }
-                    this.updatePresenceRedis(user, "OFFLINE", null)
-                    resolve(presence);
-                }
-            }
-        })
+export class ChatSockets extends Chat {
+    private _socket
+    constructor(socket, consumer, producer) {
+        super(consumer, producer)
+
+        this._socket = socket
+        this.response = new ResponseSockets(this._socket)
     }
 
     get routes() {
         this.observer(this._socket['user'].profile.phoneNo, this._socket['user'].profile.userId)
 
-        this._producer.connect()
         this._socket.on("message", async ({ topic, data }, callback) => {
             try {
                 data = JSON.parse(data)

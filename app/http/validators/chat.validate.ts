@@ -3,51 +3,39 @@ import Joi from "joi";
 import * as _ from "lodash";
 import moment from 'moment';
 import compose from "composable-middleware"
-import { IEvent, IEventCreate, IEventUpdate } from "../models/event.model";
 import { Sender } from "../services/sender.service";
-import { EventService } from "../services/event.service";
 import { PrismaClient } from "@prisma/client";
 import { IUser } from "../models/user.model";
 import { Request, Response } from "express"
+import { IRoomCreate, IRoomUpdate } from "../models/room.model";
+import { ChatRoomService } from "../services/chat.service";
 
-interface EventCreateData extends IEventCreate {
-    "address": string,
-    "lat": number,
-    "long": number
+interface RoomCreateData extends IRoomCreate {
+    "name": string,
+    "image": string,
 }
 
-interface EventUpdateData extends IEventUpdate {
-    "address": string,
-    "lat": number,
-    "long": number
+interface RoomUpdateData extends IRoomUpdate {
+    "name": string,
+    "image": string,
 }
 class Validator {
     constructor() { }
-    //************************ VALIDATE EVENT CREATE DATA ***********************//
-    protected validateCreateEvent(data: EventCreateData) {
+    //************************ VALIDATE ROOM CREATE DATA ***********************//
+    protected validateCreateRoom(data: RoomCreateData) {
         const schema = Joi.object().keys({
-            title: Joi.string().required(),
-            description: Joi.string().required(),
-            from: Joi.string().required(),
-            to: Joi.string().required(),
-            address: Joi.string().required(),
-            lat: Joi.number().required(),
-            long: Joi.number().required(),
+            name: Joi.string().required(),
+            image: Joi.string().required(), 
             members: Joi.array().items(Joi.string())
         });
         return Joi.validate(data, schema);
     }
 
-    //************************ VALIDATE EVENT UPDATE DATA ***********************//
-    protected validateUpdateEvent(data: EventUpdateData) {
+    //************************ VALIDATE ROOM UPDATE DATA ***********************//
+    protected validateUpdateRoom(data: RoomUpdateData) {
         const schema = Joi.object().keys({
-            title: Joi.string(),
-            description: Joi.string(),
-            from: Joi.string().required(),
-            to: Joi.string().required(),
-            address: Joi.string().required(),
-            lat: Joi.number().required(),
-            long: Joi.number().required(),
+            name: Joi.string().required(),
+            image: Joi.string().required(), 
             members: Joi.object().keys({
                 connect: Joi.object().keys({ id: Joi.array().items(Joi.string()) }),
                 disconnect: Joi.object().keys({ id: Joi.array().items(Joi.string()) }),
@@ -57,7 +45,7 @@ class Validator {
     }
 }
 
-class ValidateEvent {
+class ValidateRoom {
     private prisma;
     constructor() {
         this.prisma = new PrismaClient();
@@ -80,16 +68,6 @@ class ValidateEvent {
         })
     }
 
-    async validateDate(to: string, from: string, { error, next }) {
-        if (!moment(from).isSameOrAfter(moment())) {
-            return error("Event start date cannot be before today")
-        } else if (!moment(to).isSameOrAfter(moment(from))) {
-            return error("Event end date cannot be before start date")
-        } else {
-            next();
-        }
-    }
-
     private async alreadyFriends(friendId: IUser['id'], userId: IUser['id'], i: number): Promise<string | boolean> {
         return new Promise((resolve, reject) => {
             this.prisma.friends.findFirst({ where: { friendId, userId } })
@@ -103,16 +81,16 @@ class ValidateEvent {
     }
 }
 
-export const EventValidationMiddleware = new class ValidationMiddleware extends Validator {
+export const RoomValidationMiddleware = new class ValidationMiddleware extends Validator {
     constructor() {
         super();
     }
 
-    validateEventCreate() {
+    validateRoomCreate() {
         return (
             compose()
-                .use((req:Request, res:Response, next) => {
-                    super.validateCreateEvent(req.body)
+                .use((req: Request, res: Response, next) => {
+                    super.validateCreateRoom(req.body)
                         .then(data => {
                             next();
                         }).catch(error => {
@@ -126,38 +104,28 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                             return;
                         })
                 })
-                .use((req:Request, res:Response, next) => {
+                .use((req: Request, res: Response, next) => {
                     if (req.body.members.length > 0) {
                         req.body.members = _.uniq(req.body.members); // Only unique IDS 
                         req.body.members = _.reject(req.body.members, obj => obj == req['user'].id); // Remove user ID from members
                         console.log(req.body.members)
-                        const validateEvent = new ValidateEvent();
-                        validateEvent.validate(req.body.members, req['user'].id, {
+                        const validateRoom = new ValidateRoom();
+                        validateRoom.validate(req.body.members, req['user'].id, {
                             error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                             next: () => next()
                         })
                     } else {
                         next()
                     }
-                }).use((req:Request, res:Response, next) => {
-                    if (req.body.from != null && req.body.to != null) {
-                        const validateEvent = new ValidateEvent();
-                        validateEvent.validateDate(req.body.to, req.body.from, {
-                            error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
-                            next: () => next()
-                        })
-                    } else {
-                        Sender.errorSend(res, { success: false, status: 400, msg: "Event dates required" });
-                    }
                 })
         )
     }
 
-    validateEventUpdate() {
+    validateRoomUpdate() {
         return (
             compose()
-                .use((req:Request, res:Response, next) => {
-                    super.validateUpdateEvent(req.body)
+                .use((req: Request, res: Response, next) => {
+                    super.validateUpdateRoom(req.body)
                         .then(data => {
                             next();
                         }).catch(error => {
@@ -171,23 +139,23 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                             return;
                         })
                 })
-                .use(async (req:Request, res:Response, next) => {
-                    const eventService = new EventService()
-                    let event = await eventService.findOne({ id: req.params.id, userId: req['user'].id })
+                .use(async (req: Request, res: Response, next) => {
+                    const roomService = new ChatRoomService()
+                    let event = await roomService.findOne({ id: req.params.id, userId: req['user'].id })
                     if (event == null) {
-                        Sender.errorSend(res, { success: false, status: 409, msg: "Only event owner can update event" })
+                        Sender.errorSend(res, { success: false, status: 409, msg: "Only chat room owner can update room" })
                     } else {
                         req['event'] = event
                         next();
                     }
                 })
-                .use((req:Request, res:Response, next) => {
+                .use((req: Request, res: Response, next) => {
                     if (req.body.members != null && req.body.members.connect != null && req.body.members.connect.id.length > 0) {
                         req.body.members.connect.id = _.uniq(req.body.members.connect.id); // Only unique IDS 
                         req.body.members.connect.id = _.reject(req.body.members.connect.id, obj => obj == req['user'].id); // Remove user ID from members
                         console.log(req.body.members.connect.id)
-                        const validateEvent = new ValidateEvent();
-                        validateEvent.validate(req.body.members.connect.id, req['user'].id, {
+                        const validateRoom = new ValidateRoom();
+                        validateRoom.validate(req.body.members.connect.id, req['user'].id, {
                             error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                             next: () => next()
                         })
@@ -203,25 +171,14 @@ export const EventValidationMiddleware = new class ValidationMiddleware extends 
                                 break;
                             }
                         }
-                        if(index == req.body.members.disconnect.id.length){
+                        if (index == req.body.members.disconnect.id.length) {
                             next();
                         }
                     } else {
                         next()
                     }
                 })
-                // Need to check if the members connect and disconnect are already in the event or not
-                .use((req:Request, res:Response, next) => {
-                    if (req.body.from != null && req.body.to != null) {
-                        const validateEvent = new ValidateEvent();
-                        validateEvent.validateDate(req.body.to, req.body.from, {
-                            error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
-                            next: () => next()
-                        })
-                    } else {
-                        next()
-                    }
-                })
+                // Need to check if the members connect and disconnect are already in the room or not
         )
     }
 

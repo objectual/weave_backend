@@ -2,8 +2,8 @@
 import { PrismaClient } from '@prisma/client';
 import { IUserCreateProfile, IUserProfile } from "../models/user.model";
 import { IProfileCreate } from '../models/profile.user.model';
-import { RedisService } from '../../cache/redis.service';
-import { generateKeyPair } from 'crypto';
+import { RedisService } from '../../cache/redis.service'; 
+import * as openpgp from 'openpgp';
 
 const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_ACCOUNT_TOKEN);
 
@@ -37,7 +37,7 @@ const select = { // ONLY USED FOR ADMIN
     email: true,
     blocked: true,
     role: true,
-    encryption: true,
+    encryption: { select: { pub: true } },
     gcm: true,
     images: true,
     profile: true,
@@ -224,46 +224,37 @@ export class UserService {
     }
 
     updateKeyPair(user: IUserProfile): Promise<IUserProfile> {
-        return new Promise((resolve, reject) => {
-            generateKeyPair('rsa', {
-                modulusLength: 1024,
-                publicKeyEncoding: {
-                    type: 'pkcs1',
-                    format: 'pem'
+        return new Promise(async (resolve, reject) => {
+            let { privateKey, publicKey, revocationCertificate } = await openpgp.generateKey({
+                type: 'ecc', // Type of the key, defaults to ECC
+                curve: 'curve25519', // ECC curve name, defaults to curve25519
+                userIDs: [{ name: `${user.profile.firstName} ${user.profile.lastName}` }], // you can pass multiple user IDs
+                passphrase:process.env.PASSPHRASE, // protects the private key
+                format: 'armored' // output key format, defaults to 'armored' (other options: 'binary' or 'object')
+            });
+            
+            this.prisma.user.update({
+                where: {
+                    id: user.id
                 },
-                privateKeyEncoding: {
-                    type: 'pkcs1',
-                    format: 'pem',
-                    cipher: 'aes-256-cbc',
-                    passphrase: process.env.PASSPHRASE
-                }
-            }, (err, publicKey, privateKey) => {
-                if (err) {
-                    return reject(err)
-                }
-                this.prisma.user.update({
-                    where: {
-                        id: user.id
-                    },
-                    data: {
-                        encryption: {
-                            upsert: {
-                                update: {
-                                    pub: Buffer.from(publicKey).toString('base64')
-                                },
-                                create: {
-                                    pub: Buffer.from(publicKey).toString('base64')
-                                }
+                data: {
+                    encryption: {
+                        upsert: {
+                            update: {
+                                pub: Buffer.from(publicKey).toString('base64')
+                            },
+                            create: {
+                                pub: Buffer.from(publicKey).toString('base64')
                             }
                         }
-                    },
-                    select: select
-                }).then((user) => {
-                    user.encryption['sec'] = Buffer.from(privateKey).toString('base64')
-                    resolve(user)
-                }).catch(error => { reject(error) })
-                    .finally(() => this.prisma.$disconnect())
-            })
+                    }
+                },
+                select: select
+            }).then((user) => {
+                user.encryption['sec'] = Buffer.from(privateKey).toString('base64')
+                resolve(user)
+            }).catch(error => { reject(error) })
+                .finally(() => this.prisma.$disconnect())
         });
     }
 

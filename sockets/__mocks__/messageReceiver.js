@@ -6,6 +6,10 @@ process.argv.forEach(function (val, index, array) {
 const io = require("socket.io-client");
 const fs = require("fs");
 const jwt = args['--jwt']
+const path = require("path");
+const openpgp = require('openpgp');
+
+const passphrase = 'We@vE' // KEEP THIS A SECRET
 const socket = io(`http://127.0.0.1:8000`, {
     extraHeaders: { Authorization: `Bearer ${jwt}` }
 });
@@ -15,33 +19,41 @@ const die = setTimeout(function () {
     process.exit(1)
 }, 10000);
 
-var crypto = require("crypto");
-var path = require("path");
 
-var encryptStringWithRsaPublicKey = function (toEncrypt, relativeOrAbsolutePathToPublicKey) {
-    var absolutePath = path.resolve(relativeOrAbsolutePathToPublicKey);
-    var publicKey = fs.readFileSync(absolutePath, "utf8");
-    var buffer = Buffer.from(toEncrypt);
-    var encrypted = crypto.publicEncrypt({
-        key: publicKey,
-        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: "sha256",
-    }, buffer);
-    return encrypted.toString("base64");
-};
-
-var decryptStringWithRsaPrivateKey = function (toDecrypt, relativeOrAbsolutePathtoPrivateKey) {
-    var absolutePath = path.resolve(relativeOrAbsolutePathtoPrivateKey);
-    var privateKey = fs.readFileSync(absolutePath, "utf8");
-    var buffer = Buffer.from(toDecrypt, "base64");
-    var decrypted = crypto.privateDecrypt({
-        key: privateKey,
-        passphrase: 'We@vE', // KEEP THIS A SECRET
-        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: "sha256",
-    }, buffer);
-    return decrypted.toString("utf8");
-};
+async function encryptStringWithPgpPublicKey(relativeOrAbsolutePathToPublicKeys, myPrivateKeyPath, plaintext, passphrase) {
+    const encrypted = await openpgp.encrypt({
+        message: await openpgp.createMessage({ text: plaintext }), // input as Message object
+        encryptionKeys: await Promise.all(relativeOrAbsolutePathToPublicKeys.map(keyPath => path.resolve(keyPath)).map(async keyPath => {
+            return await openpgp.readKey({ armoredKey: fs.readFileSync(keyPath, "utf8") });
+        })).then(keys => {
+            return keys
+        }),
+        signingKeys: await openpgp.decryptKey({
+            privateKey: await openpgp.readPrivateKey({ armoredKey: fs.readFileSync(path.resolve(myPrivateKeyPath), "utf8") }),
+            passphrase
+        }) // optional - This is the key of user who signed this message. For signature verification
+    });
+    return Buffer.from(encrypted).toString("base64")
+}
+async function decryptStringWithPgpPrivateKey(myPrivateKey, signeePublicKey, toDecrypt, passphrase) {
+    try {
+        const { data: decrypted, signatures } = await openpgp.decrypt({
+            message: await openpgp.readMessage({
+                armoredMessage: Buffer.from(toDecrypt, "base64").toString('ascii')// parse armored message
+            }),
+            verificationKeys: await openpgp.readKey({ armoredKey: fs.readFileSync(path.resolve(signeePublicKey), "utf8") }), // optional - This is public key of who signed this message.
+            decryptionKeys: await openpgp.decryptKey({
+                privateKey: await openpgp.readPrivateKey({ armoredKey: fs.readFileSync(path.resolve(myPrivateKey), "utf8") }),
+                passphrase
+            })
+        });
+        // check signature validity (signed messages only)
+        await signatures[0].verified; // throws on invalid signature 
+        return decrypted
+    } catch (e) {
+        throw new Error('Signature could not be verified: ' + e.message);
+    }
+}
 
 // node .\messageReceiver.js --jwt=<JWT FROM SERVER>
 //----------------------------------------- CONFIGURATION BLOCK.
@@ -76,7 +88,7 @@ function getUserPresence(phoneNo, callback) {
 }
 function consumerListeners(myPhoneNo, privateKeyPath) {
     console.log("Consumer listener attached")
-    socket.on('message', message => { // Background 
+    socket.on('message', async message => { // Background 
         /* SAMPLE RESPONSE
         {
           text: 'message',
@@ -87,13 +99,13 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
         message = JSON.parse(message.message)
         if (message.to == myPhoneNo) {
             // To check if there is a message from any other users.
-            let decn_msg = decryptStringWithRsaPrivateKey(message.value, privateKeyPath)
+            let decn_msg = await decryptStringWithPgpPrivateKey(privateKeyPath, `./keys/${message.from}.pub`, message.value, passphrase)
             console.log("Message from Kafka received: ", message, "Decrypted: ", decn_msg)  // <-- This is the actual item to save 
             if (message.type == "TEXT" || message.type == "MEDIA") {
                 // NEED TO SEND BACK READ OR DELIVERED TO OTHER USER
 
                 // get presence of message sender
-                getUserPresence(message.from, data => {
+                getUserPresence(message.from, async data => {
                     /* SAMPLE RESPONSE
                     {
                       phoneNo: '923343664550',
@@ -120,7 +132,7 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
                     fs.writeFileSync(`./keys/${message.from}.pub`, Buffer.from(data.presence.pub, 'base64'));
 
                     // Mark message as delivered(✓D)
-                    let enc_msg_delivered = encryptStringWithRsaPublicKey("DELIVERED", `./keys/${message.from}.pub`)
+                    let enc_msg_delivered = await encryptStringWithPgpPublicKey([`./keys/${message.from}.pub`], `./keys/${myPhoneNo}`, "DELIVERED", passphrase)
 
                     socket.emit('message', {
                         topic: message.from,
@@ -139,7 +151,7 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
 
 
                     // Mark message as read(✓R)
-                    let enc_msg_read = encryptStringWithRsaPublicKey("READ", `./keys/${message.from}.pub`)
+                    let enc_msg_read = await encryptStringWithPgpPublicKey([`./keys/${message.from}.pub`], `./keys/${myPhoneNo}`, "READ", passphrase)
 
                     socket.emit('message', {
                         topic: message.from,
