@@ -3,6 +3,7 @@ import express from "express";
 const app = express();
 
 import AuthRoutes from "../app/http/controller/api.v1/auth";
+import GroupRoutes from "../app/http/controller/api.v1/group";
 import ConnectionRoutes from "../app/http/controller/api.v1/connection";
 import EventRoutes from "../app/http/controller/api.v1/events";
 import UserRoutes from "../app/http/controller/api.v1/user";
@@ -19,6 +20,8 @@ class ApiRoutes {
         app.use("/connections", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), new ConnectionRoutes().routes);
 
         app.use("/events", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), new EventRoutes().routes);
+
+        app.use("/group", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), new GroupRoutes().routes);
 
         app.use("/users/admin", AuthMiddleware.isAuthenticated(), AuthMiddleware.isApproved(), RoleMiddleware.isAdmin(), new UserAdminRoutes().routes);
         return app

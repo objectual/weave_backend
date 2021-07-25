@@ -200,15 +200,17 @@ export const ConnectionValidationMiddleware = new class ValidationMiddleware ext
     blockedUsersList() {
         return (
             compose()
-                .use((req:Request, res:Response, next) => {
+                .use((req:Request, res:Response, next) => { 
                     // Attaches blocked users in both list to the request
                     const validateBlocked = new ValidateBlocked();
                     validateBlocked.userInBlockList(req['user'].id, {
                         error: (msg) => Sender.errorSend(res, { success: false, status: 409, msg }),
                         next: (blockedObject) => {
+                        console.log('blockedObject :', blockedObject);
                             if (blockedObject != null) {
                                 req['user'].data.blockedByMe = blockedObject.blockedByMe // users I blocked
                                 req['user'].data.blockedByOthers = blockedObject.blockedByOthers // users who blocked me 
+                                next()
                             } else {
                                 req['user'].data.blockedByMe = [] // users I blocked
                                 req['user'].data.blockedByOthers = [] // users who blocked me  

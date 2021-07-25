@@ -10,6 +10,7 @@ export const CacheMiddleware = new class CacheMiddleware {
             compose()
                 // Attach user to request
                 .use((req: Request, res: Response, next) => {
+                    console.log("HERE")
                     let { id, key } = <{ id: string, key: string }>req.query;
                     if (id != null && id != "" && id != undefined) {
                         // Check if I blocked of the other user blocked

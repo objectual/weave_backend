@@ -24,7 +24,8 @@ model User {
   eventsOwned     Event[]       @relation("EventsOwned") // Containing my ID with events
   event           Event[]
   roomsOwned      Room[]        @relation("RoomsOwned") // Containing my ID with rooms
-  rooms           Room[]
+  roomsAdmin      Room[]        @relation("RoomsAdmin")
+  rooms           Room[]        @relation("RoomsMember")
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -76,15 +77,18 @@ model Images {
   id           String     @id @default(uuid())
   cloudinaryId String
   path         String
-  type         ImageTypes @default(USER) 
-  user         User       @relation(fields: [userId], references: [id])
-  userId       String
+  type         ImageTypes @default(USER)
+  room         Room?      @relation(fields: [roomId], references: [id])
+  roomId       String?
+  user         User?      @relation(fields: [userId], references: [id])
+  userId       String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
 
 enum ImageTypes {
-  USER 
+  USER
+  CHAT
 }
 
 //*************** CONNECTIONS LEVEL ***************//
@@ -136,12 +140,14 @@ model Location {
 
 //*************** Chats LEVEL ***************//
 model Room {
-  id        String   @id @default(uuid())
-  name      String
-  image     String
-  owner     User     @relation(name: "RoomsOwned", fields: [userId], references: [id])
-  userId    String
-  members   User[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  image       Images? // One image row (optional)
+  owner       User     @relation(name: "RoomsOwned", fields: [userId], references: [id])
+  userId      String
+  admins      User[]   @relation("RoomsAdmin")
+  members     User[]   @relation("RoomsMember")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

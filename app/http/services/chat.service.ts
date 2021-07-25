@@ -4,8 +4,9 @@ import { IRoom, IRoomCreate, IRoomUpdate } from '../models/room.model';
 let select = {
     id: true,
     name: true,
-    image: true,
+    image: { select: { path: true } },
     owner: { select: { profile: true } },
+    admins: { select: { profile: true } },
     members: { select: { profile: true } },
     createdAt: true,
     updatedAt: true,
@@ -17,7 +18,8 @@ interface IRoomsResolver {
 export class ChatRoomService {
     private prisma;
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = new PrismaClient(); 
+        // this.prisma.room.update({where: {id:"4c48845e-678b-4a6c-8033-8f0baac2ddf9" },data: {image: {update: {path: "", cloudinaryId: ""}}}})
     }
     create(room: IRoomCreate): Promise<IRoom> {
         return new Promise((resolve, reject) => {

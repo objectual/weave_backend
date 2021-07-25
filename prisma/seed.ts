@@ -40,7 +40,7 @@ async function main() {
             topic: "447752581599",
             numPartitions: 2
         }]
-    }).then(()=>{
+    }).then(() => {
         console.log("TOPICS CREATED .... ", "447752581599")
     })
 
@@ -111,7 +111,7 @@ async function main() {
             topic: "923343664550",
             numPartitions: 2
         }]
-    }).then(()=>{
+    }).then(() => {
         console.log("TOPICS CREATED .... ", "923343664550")
     })
 
@@ -148,7 +148,7 @@ async function main() {
             topic: "923323070980",
             numPartitions: 2
         }]
-    }).then(()=>{
+    }).then(() => {
         console.log("TOPICS CREATED .... ", "923323070980")
     })
 
@@ -188,7 +188,7 @@ async function main() {
         create: {
             "id": "3ac71834-45a6-46fc-8985-60709bcd8c5a",
             "userId": "e031e3b2-bd0d-455a-b08a-3a21271be74e",
-            "blockedId": "9b4b4f2c-7748-4214-8708-96ba9ab30957",
+            "blockedId": "378e5609-1ad7-44e2-acf2-be1cb4028a4a",
             "createdAt": "2021-06-25T12:20:25.799Z",
         },
         include: { user: true, blocked: true },
@@ -223,6 +223,34 @@ async function main() {
         include: { owner: true, members: true, location: true },
     })
     console.log("Event created: ", Hannah_Olive_Suzy_Adams_Jimmy_Harper_Event)
+
+    const Suzy_Friends_Create_Chat_Room = await prisma.room.upsert({
+        where: { id: "4c48845e-678b-4a6c-8033-8f0baac2ddf9" },
+        update: {},
+        create: {
+            "name": "Friends",
+            "description": "Just us friends forever",
+            "owner": { "connect": { "id": "9b4b4f2c-7748-4214-8708-96ba9ab30957" } },
+            "admins": {
+                "connect": [
+                    { "id": "e031e3b2-bd0d-455a-b08a-3a21271be74e" }]
+            },
+            "members": {
+                "connect": [
+                    { "id": "e031e3b2-bd0d-455a-b08a-3a21271be74e" }, { "id": "378e5609-1ad7-44e2-acf2-be1cb4028a4a" }]
+            },
+            "image": {
+                "create": {
+                    "type": "CHAT",
+                    "cloudinaryId": "DEFAULT",
+                    "path": "https://res.cloudinary.com/weavemasology/image/upload/v1627207902/images/customers-icon-29_c00nge.png"
+                }
+            }
+        },
+        include: { image: true, owner: true, members: true }
+    })
+    console.log('Suzy Create Friends Chat Room :', Suzy_Friends_Create_Chat_Room);
+
 }
 main()
     .catch(e => {

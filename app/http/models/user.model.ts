@@ -1,5 +1,5 @@
 "use strict";
-import { IImages } from './images.user.model';
+import { IImages } from './images.model';
 import { IProfile, IProfileCreate, IProfileEdit } from './profile.user.model';
 export interface IUser {
     id?: string;

@@ -130,8 +130,7 @@ export class User {
                         const imgURL = await image(file, pathSplit);
                         fs.unlink(file, () => { console.log(`Deleted ${file}`) });
                         return imgURL;
-                    }))
-                    console.log(images, "DONE")
+                    })) 
                     let uploadImages = await imageService.create(images.map(i => { return { cloudinaryId: i.id, path: i.path, userId: req['user'].id } }))
                     Sender.send(res, { success: true, data: uploadImages, msg: "Images uploaded", status: 201 })
                 }

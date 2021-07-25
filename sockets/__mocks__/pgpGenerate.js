@@ -7,7 +7,7 @@ const openpgp = require('openpgp');
     let { privateKey, publicKey, revocationCertificate } = await openpgp.generateKey({
         type: 'ecc', // Type of the key, defaults to ECC
         curve: 'curve25519', // ECC curve name, defaults to curve25519
-        userIDs: [{ name: 'Jon Smith', email: 'jon@example.com' }], // you can pass multiple user IDs
+        userIDs: [{ name: 'Weave App', email: 'appweaveitsol@gmail.com', comment: "System info messages key" }], // you can pass multiple user IDs
         passphrase, // protects the private key
         format: 'armored' // output key format, defaults to 'armored' (other options: 'binary' or 'object')
     });
@@ -23,7 +23,8 @@ const openpgp = require('openpgp');
 
     const encrypted = await openpgp.encrypt({
         message: await openpgp.createMessage({ text: plaintext }), // input as Message object
-        encryptionKeys: publicKey
+        encryptionKeys: publicKey,
+        signingKeys: privateKey // optional
     });
     console.log(encrypted); // '-----BEGIN PGP MESSAGE ... END PGP MESSAGE-----'
 
@@ -38,6 +39,7 @@ const openpgp = require('openpgp');
     console.log(decrypted); // 'Hello, World!'
     // check signature validity (signed messages only)
     try {
+        console.log('signatures :', signatures);
         await signatures[0].verified; // throws on invalid signature
         console.log('Signature is valid');
     } catch (e) {

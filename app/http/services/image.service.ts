@@ -1,10 +1,12 @@
 "use strict";
 import { PrismaClient } from '@prisma/client'; 
-import { IImages } from '../models/images.user.model';
+import { IImages } from '../models/images.model';
 interface IImageCreate {
     cloudinaryId: string;
     path: string;
-    userId: string;
+    type?: string;
+    userId?: string;
+    roomId?: string;
 }
 const select = {
     id: true,
@@ -17,7 +19,7 @@ const select = {
 export class ImageService {
     private prisma;
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = new PrismaClient(); 
     }
     create(images: IImageCreate[]): Promise<IImages[]> {
         return new Promise((resolve, reject) => {

@@ -6,7 +6,8 @@ import { UserService } from "../app/http/services/user.service";
 import { ResponseSockets } from "./response.socket";
 export interface IMessage {
     id: string;
-    pid?: IMessage['id'];
+    group?: string; // ID of group chat room
+    pid?: IMessage['id']; // Parent message ID for state messages
     to?: IUserProfile['profile']['phoneNo'];
     from: IUserProfile['profile']['phoneNo'];
     value: string | IMessageState | IUserPresence; // value can be either a message, a message state or a user presence
