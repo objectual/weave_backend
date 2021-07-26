@@ -18,8 +18,7 @@ interface IRoomsResolver {
 export class ChatRoomService {
     private prisma;
     constructor() {
-        this.prisma = new PrismaClient(); 
-        // this.prisma.room.update({where: {id:"4c48845e-678b-4a6c-8033-8f0baac2ddf9" },data: {image: {update: {path: "", cloudinaryId: ""}}}})
+        this.prisma = new PrismaClient();
     }
     create(room: IRoomCreate): Promise<IRoom> {
         return new Promise((resolve, reject) => {

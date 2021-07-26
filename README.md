@@ -148,6 +148,9 @@ By default, every message that is sent to any `USER` or `GROUP` it is marked wit
 - Mean the network connection is down, messages are fired to the FCM and collected on a temporary 30 day storage.
 - When network connection is restored, steps from **AWAY** are performed and message store is cleared. 
 
+**GROUP MESSAGES**
+
+- Info messages from the system are fired when new members/admins are added, members/admins are removed, any user leaves or group details are updated
 
 ## Support
 

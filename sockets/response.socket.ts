@@ -1,5 +1,5 @@
-import * as _ from "lodash";
-import { IMessage } from "./chat.socket";
+import * as _ from "lodash"; 
+import { IMessage } from "../app/http/services/kafka.service";
 interface ISocketEmit {
     text: string,
     message?: IMessage

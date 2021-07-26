@@ -7,6 +7,7 @@ import { ImageService } from "../../../services/image.service";
 import { Cloudinary, ICloudinaryUpload } from "../../../../constants/cloudinary";
 import fs from "fs";
 import { KafkaService, Messages } from "../../../services/kafka.service";
+import { UserService } from "../../../services/user.service";
 
 export class Group {
     async get(req: Request, res: Response) {
@@ -56,37 +57,86 @@ export class Group {
             }
             const roomService = new ChatRoomService();
             let room = await roomService.create(body);
+
+            // NOTIFY MEMBERS AND ADMINS ABOUT NEW GROUP
             const kafkaService = new KafkaService();
             const messagesService = new Messages(`Group created by ${room.owner.profile.phoneNo}`)
             let phoneNos = _.uniq([room.owner.profile.phoneNo, ...room.admins.map(a => a.profile.phoneNo), ...room.members.map(m => m.profile.phoneNo)])
-            let messages = await messagesService.getEncryptedMessages(phoneNos)
-            res.send({ messages })
-            // Sender.send(res, { success: true, data: room, status: 201, msg: "Room created" })
+            let messages = await messagesService.getEncryptedMessages(phoneNos, room.id)
+            await kafkaService.producer(messages)
+            // NOTIFIER END
+
+            Sender.send(res, { success: true, data: room, status: 201, msg: "Room created" })
         } catch (e) {
             Sender.errorSend(res, { success: false, msg: e.message, status: 500 })
         }
     }
     async patch(req: Request, res: Response) {
         try {
+            const userService = new UserService();
+            const kafkaService = new KafkaService();
             let body: IRoomUpdate = {
                 name: req.body.name,
                 description: req.body.name,
                 admins: {},
                 members: {},
             }
+            let messages = []
+            if (req.body.members != null && req.body.members.connect != null && req.body.members.connect.id.length > 0 && (_.includes(req['room'].admins, req['user'].id) || req['room'].owner.profile.userId == req['user'].id)) {
+                body.members['connect'] = req.body.members.connect.id.map(x => { return { id: x } })
+                // Notify Users of new group members
+                let newUsers = await userService.find({ id: { in: req.body.members.connect.id.map(x => x) } })
+                const newUsersMessages = newUsers.users.map(users => { return new Messages(`${users.profile.phoneNo} is now admin`) })
+                messages = [...await newUsersMessages.map(async messagesService =>
+                    await messagesService.getEncryptedMessages(newUsers.users.map(a =>
+                        a.profile.phoneNo), req.params.id))]
+                console.log(messages)
+                // await kafkaService.producer(messages)
+
+            } else if (req.body.members != null && req.body.members.disconnect != null && req.body.members.disconnect.id.length > 0 && (_.includes(req['room'].admins, req['user'].id) || req['room'].owner.profile.userId == req['user'].id)) {
+                body.members['disconnect'] = req.body.members.disconnect.id.map(x => { return { id: x } })
+                // Notify Users of group members remove
+                let oldUsers = await userService.find({ id: { in: req.body.members.disconnect.id.map(x => x) } })
+                const oldUserMessages = oldUsers.users.map(users => { return new Messages(`${users.profile.phoneNo} is now admin`) })
+                messages = [...await oldUserMessages.map(async messagesService =>
+                    await messagesService.getEncryptedMessages(oldUsers.users.map(a =>
+                        a.profile.phoneNo), req.params.id))]
+                console.log(messages)
+                // await kafkaService.producer(messages)
+
+            }
 
             if (req.body.admins != null && req.body.admins.connect != null && req.body.admins.connect.id.length > 0 && req['room'].owner.profile.userId == req['user'].id) {
                 body.admins['connect'] = req.body.admins.connect.id.map(x => { return { id: x } })
+                // Notify Users of new group admins
+                let newAdmins = await userService.find({ id: { in: req.body.admins.connect.id.map(x => x) } })
+                const newAdminsMessages = newAdmins.users.map(users => { return new Messages(`${users.profile.phoneNo} is now admin`) })
+                messages = [...await newAdminsMessages.map(async messagesService => 
+                    await messagesService.getEncryptedMessages(newAdmins.users.map(a => 
+                        a.profile.phoneNo), req.params.id))]
+                console.log(messages)
+                // await kafkaService.producer(messages)
+
+
             } else if (req.body.admins != null && req.body.admins.disconnect != null && req.body.admins.disconnect.id.length > 0 && req['room'].owner.profile.userId == req['user'].id) {
                 body.admins['disconnect'] = req.body.admins.disconnect.id.map(x => { return { id: x } })
+                // Notify Users of group admins remove
+                let oldAdmins = await userService.find({ id: { in: req.body.admins.disconnect.id.map(x => x) } })
+                const oldAdminsMessages = oldAdmins.users.map(users => { return new Messages(`${users.profile.phoneNo} was removed as admin`) })
+                messages = [...oldAdminsMessages.map(async messagesService => 
+                    await messagesService.getEncryptedMessages(oldAdmins.users.map(a => 
+                        a.profile.phoneNo), req.params.id))]
+                console.log(messages)
+                // await kafkaService.producer(messages)
+
             }
-            if (req.body.members != null && req.body.members.connect != null && req.body.members.connect.id.length > 0 && (_.includes(req['room'].admins, req['user'].id) || req['room'].owner.profile.userId == req['user'].id)) {
-                body.members['connect'] = req.body.members.connect.id.map(x => { return { id: x } })
-            } else if (req.body.members != null && req.body.members.disconnect != null && req.body.members.disconnect.id.length > 0 && (_.includes(req['room'].admins, req['user'].id) || req['room'].owner.profile.userId == req['user'].id)) {
-                body.members['disconnect'] = req.body.members.disconnect.id.map(x => { return { id: x } })
-            }
+            console.log("All Messages", await messages)
+            res.send(messages)
+            return
             const roomService = new ChatRoomService();
             let room = await roomService.update({ id: req.params.id }, body);
+            // Notify all members of group detail update
+
             Sender.send(res, { success: true, data: room, status: 201, msg: "Group updated" })
         }
         catch (error) {
@@ -102,6 +152,8 @@ export class Group {
                 return;
             }
             let roomDelete = await roomService.delete({ id: req.params.id, userId: req['user'].id })
+            // Notify all members of group delete update
+
             Sender.send(res, { success: true, data: roomDelete, msg: "Room removed", status: 200 })
         }
         catch (error) {
@@ -122,6 +174,7 @@ export class Group {
             } else {
                 body.admins['disconnect'] = [{ id: req['user'].id }]
                 body.members['disconnect'] = [{ id: req['user'].id }]
+                // Notify Users of group member leave
 
                 let roomUpdate = await roomService.update({ id: req.params.id }, body);
                 Sender.send(res, { success: true, data: roomUpdate, status: 200, msg: "Group left" })

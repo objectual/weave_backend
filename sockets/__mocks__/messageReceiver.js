@@ -99,10 +99,17 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
         message = JSON.parse(message.message)
         if (message.to == myPhoneNo) {
             // To check if there is a message from any other users.
-            let decn_msg = await decryptStringWithPgpPrivateKey(privateKeyPath, `./keys/${message.from}.pub`, message.value, passphrase)
+            let decn_msg;
+            if (message.type == "INFO" && message.from == "SYSTEM") {
+                // This is incase a message is received from the system which does not have a phoneNo on it, just a SYSTEM Keyword
+                decn_msg = await decryptStringWithPgpPrivateKey(privateKeyPath, `./keys/SystemMessagesPGP.pub`, message.value, passphrase)
+            } else {
+                decn_msg = await decryptStringWithPgpPrivateKey(privateKeyPath, `./keys/${message.from}.pub`, message.value, passphrase)
+            }
             console.log("Message from Kafka received: ", message, "Decrypted: ", decn_msg)  // <-- This is the actual item to save 
             if (message.type == "TEXT" || message.type == "MEDIA") {
-                // NEED TO SEND BACK READ OR DELIVERED TO OTHER USER
+                // NEED TO SEND BACK READ OR DELIVERED TO OTHER USER ONLY IF THE MESSAGE TYPE IS "TEXT" OR "MEDIA"
+                // DO NO SEND READ OR DELIVERED STATE MESSAGE TO MESSAGE TYPE "INFO", "STATE" AND "PRESENCE"
 
                 // get presence of message sender
                 getUserPresence(message.from, async data => {

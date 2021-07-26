@@ -1,20 +1,55 @@
+const openpgp = require('openpgp');
+
 import { Kafka } from "kafkajs"
 import { RedisService } from "../../cache/redis.service";
 import { IUser, IUserProfile } from "../models/user.model";
 import { UserService } from "./user.service";
 import * as _ from "lodash"
-const openpgp = require('openpgp');
 import fs from "fs";
 import path from "path";
+import { v4 as uuidv4 } from 'uuid';
 
-interface IPresence {
+export interface IMessage {
+    id: string;
+    group?: string; // ID of group chat room
+    pid?: IMessage['id']; // Parent message ID for state messages
+    to?: IUserProfile['profile']['phoneNo'];
+    from: IUserProfile['profile']['phoneNo'];
+    value: string | IMessageState | IUserPresence; // value can be either a message, a message state or a user presence
+    type: IMessageType;
+    createdAt: number;
+}
+
+export interface IPresence {
     date: number,
     presence: string,
     pub: string
 }
 
+enum IMessageType {
+    media = "MEDIA", // used for media message URI
+    info = "INFO", // used for user or system information
+    text = "TEXT", // used for text messages
+    state = "STATE", // used for notifying user message states
+    presence = "PRESENCE" // used for notifying about user presence
+}
+enum IMessageState {
+    deleted = "DELETED", // used for delete message for all users scenario
+    liked = "LIKED", // used for liked message for all users scenario
+    read = "READ",
+    delivered = "DELIVERED",
+    sent = "SENT"
+}
+enum IUserPresence {
+    online = "ONLINE",
+    offline = "OFFLINE",
+    away = "AWAY"
+}
+
+
 export class Messages {
     private message: string
+    constructor(_message?: string)
     constructor(_message: string) {
         this.message = _message
     }
@@ -34,8 +69,8 @@ export class Messages {
         });
         return Buffer.from(encrypted).toString("base64")
     }
-    async getUserPresence(phone){
-        return new Promise(async (resolve, reject)=>{ 
+    async getUserPresence(phone) {
+        return new Promise(async (resolve, reject) => {
             let users = await RedisService.searchData(`${phone}|*|user`)
             let user;
             if (users.length > 0) {
@@ -67,7 +102,7 @@ export class Messages {
                 // PRESENCE OFFLINE
                 let user = await this.getUser(phone)
                 if (user == null || user.encryption == null) {
-                    reject(null)
+                    resolve(null)
                 } else {
                     presence = {
                         date: null,
@@ -85,7 +120,7 @@ export class Messages {
             const userService = new UserService()
             const user = await userService.findOne({ profile: { phoneNo: phone }, blocked: false })
             if (user == null) {
-                reject(null)
+                resolve(null)
             } else {
                 console.log("USER CALLED FROM DATABASE", phone)
                 await RedisService.setData(user.profile, `${user.profile.phoneNo}|${user.profile.firstName}|${user.profile.lastName}|${user.profile.userId}|user`, 0)
@@ -98,25 +133,26 @@ export class Messages {
         RedisService.setData({ date, presence: presence, pub: user.encryption.pub }, `${user.profile.phoneNo}|presence`, 720 * 60 * 60 * 1000)
     }
 
-    async getEncryptedMessages(to: IUserProfile['profile']['phoneNo'][]) {
+    async getEncryptedMessages(to: IUserProfile['profile']['phoneNo'][], gid = null): Promise<IMessage[]> {
         return new Promise(async (resolve, reject) => {
             resolve(await Promise.all(to.map(async phone => {
-                console.log("HERE")
-                let user =  await this.getUserPresence(phone)
+                let user = await this.getUserPresence(phone)
                 if (user != null) {
                     fs.writeFileSync(`config/cert/temp_keys/${phone}.pub`, user['presence'].pub, 'base64')
                     return `config/cert/temp_keys/${phone}.pub`
                 }
             })).then(async keys => {
                 let enc_message = await this.encryptStringWithPgpPublicKey(keys, 'config/cert/messagesPGP', this.message, process.env.PASSPHRASE)
-                console.log('enc_message :', enc_message);
-                
+                keys.forEach(k => fs.unlinkSync(k))
                 return to.map(phone => {
-                    return {
+                    return <IMessage>{
+                        id: uuidv4(),
+                        gid,
                         value: enc_message,
                         type: "INFO",
                         to: phone,
-                        from: "SYSTEM"
+                        from: "SYSTEM",
+                        createdAt: new Date().getTime() / 1000
                     }
                 })
             }))
@@ -153,18 +189,32 @@ export class KafkaService {
         })
     }
 
-    producer(topic: string, data: any[]) {
+    producer(data: IMessage[]) {
         return new Promise(async (resolve, reject) => {
             try {
-                const producer = this.kafka.producer()
-                await producer.connect()
-                const result = await producer.send({
-                    topic: topic,
-                    messages: data
-                })
-                console.log(`Sent ${JSON.stringify(result)}`)
-                await producer.disconnect()
-                resolve(result)
+                resolve(Promise.all(data.map(async message => {
+                    try {
+                        const producer = this.kafka.producer()
+                        await producer.connect()
+                        const result = await producer.send({
+                            topic: message.to,
+                            messages: [{
+                                value: JSON.stringify(message),
+                                partition: 1
+                            }]
+                        })
+                        console.log(`Sent ${JSON.stringify(result)}`)
+                        await producer.disconnect()
+                        return result
+                    } catch (pe) {
+                        return pe
+                    }
+                })).then(results => {
+                    return results
+                }).catch(e => {
+                    console.log('Caught a bug in the system :', e);
+                    return e
+                }))
             } catch (e) {
                 reject(e)
             }

@@ -2,8 +2,10 @@
 import { PrismaClient } from '@prisma/client';
 import { IUserCreateProfile, IUserProfile } from "../models/user.model";
 import { IProfileCreate } from '../models/profile.user.model';
-import { RedisService } from '../../cache/redis.service'; 
+import { RedisService } from '../../cache/redis.service';
 import * as openpgp from 'openpgp';
+
+import fs from "fs";
 
 const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_ACCOUNT_TOKEN);
 
@@ -229,10 +231,10 @@ export class UserService {
                 type: 'ecc', // Type of the key, defaults to ECC
                 curve: 'curve25519', // ECC curve name, defaults to curve25519
                 userIDs: [{ name: `${user.profile.firstName} ${user.profile.lastName}` }], // you can pass multiple user IDs
-                passphrase:process.env.PASSPHRASE, // protects the private key
+                passphrase: process.env.PASSPHRASE, // protects the private key
                 format: 'armored' // output key format, defaults to 'armored' (other options: 'binary' or 'object')
             });
-            
+
             this.prisma.user.update({
                 where: {
                     id: user.id
@@ -252,6 +254,13 @@ export class UserService {
                 select: select
             }).then((user) => {
                 user.encryption['sec'] = Buffer.from(privateKey).toString('base64')
+
+                if (process.env.NODE_ENV == "development") {
+                    // SAVING PRIVATE AND PUBLIC KEYS FOR DEV MODE TESTING
+                    fs.writeFileSync(`sockets/__mocks__/keys/${user.profile.phoneNo}.pub`, user.encryption.pub, 'base64')
+                    fs.writeFileSync(`sockets/__mocks__/keys/${user.profile.phoneNo}`, user.encryption.sec, 'base64')
+                }
+
                 resolve(user)
             }).catch(error => { reject(error) })
                 .finally(() => this.prisma.$disconnect())
