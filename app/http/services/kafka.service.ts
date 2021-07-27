@@ -49,9 +49,16 @@ enum IUserPresence {
 
 export class Messages {
     private message: string
-    constructor(_message?: string)
-    constructor(_message: string) {
+    private messages: Promise<IMessage[]>
+    private gid: string
+    constructor(_message?: string, to?: IUserProfile['id'][], _gid?: string)
+    constructor(_message: string, to: IUserProfile['id'][], _gid: string) {
         this.message = _message
+        this.gid = _gid
+        this.messages = this.getEncryptedMessages(to, _gid).then(messages => messages)
+    }
+    get getMessages(): Promise<IMessage[]> {
+        return this.messages
     }
     async encryptStringWithPgpPublicKey(relativeOrAbsolutePathToPublicKeys, myPrivateKeyPath, plaintext, passphrase) {
         console.log('relativeOrAbsolutePathToPublicKeys :', relativeOrAbsolutePathToPublicKeys);
@@ -77,16 +84,24 @@ export class Messages {
                 console.log("SENDING FROM REDIS")
                 user = _.clone(users[0])
                 let presence = await this.checkPresence(phone)
-                user.presence = presence
-                resolve(user);
+                if (presence == null) {
+                    resolve(null);
+                } else {
+                    user.presence = presence
+                    resolve(user);
+                }
             } else {
                 user = await this.getUser(phone)
                 if (user == null) {
                     resolve(null);
                 } else {
                     let presence = await this.checkPresence(phone)
-                    user.presence = presence
-                    resolve(user);
+                    if (presence == null) {
+                        resolve(null);
+                    } else {
+                        user.presence = presence
+                        resolve(user);
+                    }
                 }
             }
         })
@@ -101,6 +116,8 @@ export class Messages {
             } else {
                 // PRESENCE OFFLINE
                 let user = await this.getUser(phone)
+
+                console.log(user.encryption)
                 if (user == null || user.encryption == null) {
                     resolve(null)
                 } else {
@@ -135,16 +152,21 @@ export class Messages {
 
     async getEncryptedMessages(to: IUserProfile['profile']['phoneNo'][], gid = null): Promise<IMessage[]> {
         return new Promise(async (resolve, reject) => {
-            resolve(await Promise.all(to.map(async phone => {
-                let user = await this.getUserPresence(phone)
-                if (user != null) {
-                    fs.writeFileSync(`config/cert/temp_keys/${phone}.pub`, user['presence'].pub, 'base64')
-                    return `config/cert/temp_keys/${phone}.pub`
-                }
-            })).then(async keys => {
+            const userService = new UserService()
+            let { users } = await userService.find({ id:  { in: to  }, blocked: false })
+            if (users.length != 0) {
+                let keys = users.map(u => {
+                    if (u.encryption != null) {
+                        return null
+                    } else {
+                        fs.writeFileSync(`config/cert/temp_keys/${u.profile.phoneNo}.pub`, u.encryption.pub, 'base64')
+                        return `config/cert/temp_keys/${u.profile.phoneNo}.pub`
+                    }
+                })
+                keys = _.reject(keys, k => k == null)
                 let enc_message = await this.encryptStringWithPgpPublicKey(keys, 'config/cert/messagesPGP', this.message, process.env.PASSPHRASE)
-                keys.forEach(k => fs.unlinkSync(k))
-                return to.map(phone => {
+                keys.forEach(k => fs.unlink(k, () => { }))
+                return resolve(to.map(phone => {
                     return <IMessage>{
                         id: uuidv4(),
                         gid,
@@ -154,8 +176,10 @@ export class Messages {
                         from: "SYSTEM",
                         createdAt: new Date().getTime() / 1000
                     }
-                })
-            }))
+                }))
+            } else {
+                reject("Users not found")
+            }
         })
     }
 }

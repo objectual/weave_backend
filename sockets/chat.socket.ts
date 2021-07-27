@@ -123,16 +123,26 @@ export class ChatSockets extends Chat {
                     console.log("SENDING FROM REDIS")
                     user = _.clone(users[0])
                     let presence = await this.checkPresence(phone)
-                    user['presence'] = presence
-                    callback(user);
+                    if (presence == null) {
+                        // This would happen when you're developing or the user is very new to the system and does not have an encryption key
+                        this.response.error("There was error in your request", null)
+                    } else {
+                        user['presence'] = presence
+                        callback(user);
+                    }
                 } else {
                     user = await this.getUser(phone)
                     if (user == null) {
                         this.response.error("User not found", null)
                     } else {
                         let presence = await this.checkPresence(phone)
-                        user['presence'] = presence
-                        callback(user);
+                        if (presence == null) {
+                            // This would happen when you're developing or the user is very new to the system and does not have an encryption key
+                            this.response.error("There was error in your request", null)
+                        } else {
+                            user['presence'] = presence
+                            callback(user);
+                        }
                     }
                 }
             } catch (error) {
