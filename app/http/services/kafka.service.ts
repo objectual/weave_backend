@@ -53,7 +53,7 @@ export class Messages {
     constructor(_message: string) {
         this.message = _message
         // This takes the current message, ID of all the other users, encrypts that message with the .pub of all the other users,
-        // and fires to every user. Maturity Level 2
+        // and fires to every user. Maturity Level 3
     }
     async encryptStringWithPgpPublicKey(relativeOrAbsolutePathToPublicKeys, myPrivateKeyPath, plaintext, passphrase) {
         console.log('relativeOrAbsolutePathToPublicKeys :', relativeOrAbsolutePathToPublicKeys);
@@ -164,8 +164,8 @@ export class Messages {
                 keys = _.reject(keys, k => k == null)
                 console.log(keys)
                 if (keys.length > 0) {
-                    let enc_message = await this.encryptStringWithPgpPublicKey(keys, 'config/cert/messagesPGP', this.message, process.env.PASSPHRASE)
-                    // keys.forEach(k => fs.unlink(k, () => { }))
+                    let enc_message = await this.encryptStringWithPgpPublicKey(keys, 'config/cert/weave', this.message, process.env.PASSPHRASE)
+                    keys.forEach(k => fs.unlink(k, () => { }))
                     return resolve(phoneNos.map(phone => {
                         return <IMessage>{
                             id: uuidv4(),

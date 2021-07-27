@@ -45,7 +45,7 @@ export class Group {
                 name: req.body.name,
                 description: req.body.description,
                 owner: { connect: { id: req['user'].id } },
-                members: { connect: req.body.members.map(x => { return { id: x } }) },
+                members: { connect: [...req.body.members.map(x => { return { id: x } }), { id: req['user'].id }] },
                 admins: { connect: req.body.admins.map(x => { return { id: x } }) },
                 image: {
                     create: {
@@ -63,7 +63,7 @@ export class Group {
             let ids = _.uniq([body.owner.connect.id, ...body.admins.connect.map(a => a.id), ...body.members.connect.map(m => m.id)])
             const messagesService = new Messages(`Group created by ${room.owner.profile.phoneNo}`)
             let messages = await messagesService.getEncryptedMessages(ids, room.id).then(messages => messages)
-            await kafkaService.producer(messages)
+            kafkaService.producer(messages)
             // NOTIFIER END
 
             Sender.send(res, { success: true, data: room, status: 201, msg: "Room created" })
@@ -96,7 +96,7 @@ export class Group {
             if (req.body.members != null && req.body.members.connect != null && req.body.members.connect.id.length > 0 && (_.includes(req['room'].admins, req['user'].id) || req['room'].owner.profile.userId == req['user'].id)) {
                 body.members['connect'] = req.body.members.connect.id.map(x => { return { id: x } }).filter(function (idObject) {
                     // Skip connections of users who are already in room
-                    return !_.find(old_room.members, function (o) { return o.id == idObject.id; });
+                    return !_.find(old_room.members, function (o) { return o.profile.userId == idObject.id; });
                 });
                 if (body.members.connect.length > 0) {
                     // Notify Users of new group members
@@ -113,7 +113,7 @@ export class Group {
             } else if (req.body.members != null && req.body.members.disconnect != null && req.body.members.disconnect.id.length > 0 && (_.includes(req['room'].admins, req['user'].id) || req['room'].owner.profile.userId == req['user'].id)) {
                 body.members['disconnect'] = req.body.members.disconnect.id.map(x => { return { id: x } }).filter(function (idObject) {
                     // Skip connections of users who are already in room
-                    return _.find(old_room.members, function (o) { return o.id == idObject.id; });
+                    return _.find(old_room.members, function (o) { return o.profile.userId == idObject.id; });
                 });
                 if (body.members.disconnect.length > 0) {
                     // Notify Deleting users of old group members
@@ -132,7 +132,7 @@ export class Group {
             if (req.body.admins != null && req.body.admins.connect != null && req.body.admins.connect.id.length > 0 && req['room'].owner.profile.userId == req['user'].id) {
                 body.admins['connect'] = req.body.admins.connect.id.map(x => { return { id: x } }).filter(function (idObject) {
                     // Skip connections of users who are already in room
-                    return !_.find(old_room.admins, function (o) { return o.id == idObject.id; });
+                    return !_.find(old_room.admins, function (o) { return o.profile.userId == idObject.id; });
                 });
                 if (body.admins.connect.length > 0) {
                     // Notify new admin to members
@@ -149,7 +149,7 @@ export class Group {
             } else if (req.body.admins != null && req.body.admins.disconnect != null && req.body.admins.disconnect.id.length > 0 && req['room'].owner.profile.userId == req['user'].id) {
                 body.admins['disconnect'] = req.body.admins.disconnect.id.map(x => { return { id: x } }).filter(function (idObject) {
                     // Skip connections of users who are already in room
-                    return _.find(old_room.members, function (o) { return o.id == idObject.id; });
+                    return _.find(old_room.members, function (o) { return o.profile.userId == idObject.id; });
                 });
                 if (body.admins.disconnect.length > 0) {
                     // Notify removed admin to members
@@ -167,18 +167,15 @@ export class Group {
             let room = await roomService.update({ id: req.params.id }, body);
 
             let ids = _.uniq([room.owner.profile.userId, ...room.admins.map(a => a.profile.userId), ...room.members.map(a => a.profile.userId)])
-            if (messages.length > 0) { 
-                Promise.all(messages.map(x => new Messages(x)
-                    .getEncryptedMessages(ids, room.id)
-                    .then(messages => messages))
+            if (messages.length > 0) {
+                Promise.all(
+                    messages.map(x => new Messages(x).getEncryptedMessages(ids, room.id).then(messages => messages))
                 )
                     .then(kmessages => {
-                        res.send(kmessages)
+                        kafkaService.producer(kmessages.flat())
                     })
             }
-            // await kafkaService.producer(await messagesService.)
-
-            // Sender.send(res, { success: true, data: room, status: 201, msg: "Group updated" })
+            Sender.send(res, { success: true, data: room, status: 201, msg: "Group updated" })
         }
         catch (error) {
             Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
