@@ -1,9 +1,7 @@
 import * as _ from "lodash";
 import { v4 as uuidv4 } from 'uuid';
-import { RedisService } from "../app/cache/redis.service";
-import { IUserProfile } from "../app/http/models/user.model";
-import { IMessage, IPresence, Messages } from "../app/http/services/kafka.service";
-import { UserService } from "../app/http/services/user.service";
+import { RedisService } from "../app/cache/redis.service"; 
+import { IMessage, Messages } from "../app/http/services/kafka.service"; 
 import { ResponseSockets } from "./response.socket";
 
 class Chat extends Messages {

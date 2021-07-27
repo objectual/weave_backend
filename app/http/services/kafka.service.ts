@@ -49,16 +49,11 @@ enum IUserPresence {
 
 export class Messages {
     private message: string
-    private messages: Promise<IMessage[]>
-    private gid: string
-    constructor(_message?: string, to?: IUserProfile['id'][], _gid?: string)
-    constructor(_message: string, to: IUserProfile['id'][], _gid: string) {
+    constructor(_message?: string)
+    constructor(_message: string) {
         this.message = _message
-        this.gid = _gid
-        this.messages = this.getEncryptedMessages(to, _gid).then(messages => messages)
-    }
-    get getMessages(): Promise<IMessage[]> {
-        return this.messages
+        // This takes the current message, ID of all the other users, encrypts that message with the .pub of all the other users,
+        // and fires to every user. Maturity Level 2
     }
     async encryptStringWithPgpPublicKey(relativeOrAbsolutePathToPublicKeys, myPrivateKeyPath, plaintext, passphrase) {
         console.log('relativeOrAbsolutePathToPublicKeys :', relativeOrAbsolutePathToPublicKeys);
@@ -150,33 +145,40 @@ export class Messages {
         RedisService.setData({ date, presence: presence, pub: user.encryption.pub }, `${user.profile.phoneNo}|presence`, 720 * 60 * 60 * 1000)
     }
 
-    async getEncryptedMessages(to: IUserProfile['profile']['phoneNo'][], gid = null): Promise<IMessage[]> {
+    async getEncryptedMessages(to: IUserProfile['id'][], gid = null): Promise<IMessage[]> {
         return new Promise(async (resolve, reject) => {
             const userService = new UserService()
-            let { users } = await userService.find({ id:  { in: to  }, blocked: false })
+            let { users } = await userService.find({ id: { in: to }, blocked: false })
+            let phoneNos = []
+            console.log(users)
             if (users.length != 0) {
                 let keys = users.map(u => {
-                    if (u.encryption != null) {
+                    if (u.encryption == null) {
                         return null
                     } else {
+                        phoneNos.push(u.profile.phoneNo)
                         fs.writeFileSync(`config/cert/temp_keys/${u.profile.phoneNo}.pub`, u.encryption.pub, 'base64')
                         return `config/cert/temp_keys/${u.profile.phoneNo}.pub`
                     }
                 })
                 keys = _.reject(keys, k => k == null)
-                let enc_message = await this.encryptStringWithPgpPublicKey(keys, 'config/cert/messagesPGP', this.message, process.env.PASSPHRASE)
-                keys.forEach(k => fs.unlink(k, () => { }))
-                return resolve(to.map(phone => {
-                    return <IMessage>{
-                        id: uuidv4(),
-                        gid,
-                        value: enc_message,
-                        type: "INFO",
-                        to: phone,
-                        from: "SYSTEM",
-                        createdAt: new Date().getTime() / 1000
-                    }
-                }))
+                console.log(keys)
+                if (keys.length > 0) {
+                    let enc_message = await this.encryptStringWithPgpPublicKey(keys, 'config/cert/messagesPGP', this.message, process.env.PASSPHRASE)
+                    // keys.forEach(k => fs.unlink(k, () => { }))
+                    return resolve(phoneNos.map(phone => {
+                        return <IMessage>{
+                            id: uuidv4(),
+                            gid,
+                            value: enc_message,
+                            type: "INFO",
+                            to: phone,
+                            from: "SYSTEM",
+                            createdAt: new Date().getTime() / 1000
+                        }
+                    }))
+                }
+                reject("No keys found")
             } else {
                 reject("Users not found")
             }
@@ -215,25 +217,33 @@ export class KafkaService {
 
     producer(data: IMessage[]) {
         return new Promise(async (resolve, reject) => {
+            const producer = this.kafka.producer()
+            await producer.connect()
             try {
                 resolve(Promise.all(data.map(async message => {
                     try {
-                        const producer = this.kafka.producer()
-                        await producer.connect()
-                        const result = await producer.send({
+                        RedisService.setData(data, `${message.id}|${message.to}|${message.from}|message`, 720 * 60 * 60 * 1000)
+                        let result = await producer.send({
                             topic: message.to,
                             messages: [{
                                 value: JSON.stringify(message),
                                 partition: 1
                             }]
                         })
-                        console.log(`Sent ${JSON.stringify(result)}`)
-                        await producer.disconnect()
+                        console.log(`Sent ${JSON.stringify(result)}`,{
+                            topic: message.to,
+                            messages: [{
+                                value: JSON.stringify(message),
+                                partition: 1
+                            }]
+                        })
                         return result
                     } catch (pe) {
+                        console.log(pe)
                         return pe
                     }
-                })).then(results => {
+                })).then(async results => {
+                    await producer.disconnect()
                     return results
                 }).catch(e => {
                     console.log('Caught a bug in the system :', e);

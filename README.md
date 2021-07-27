@@ -150,6 +150,8 @@ By default, every message that is sent to any `USER` or `GROUP` it is marked wit
 
 **GROUP MESSAGES**
 
+- Group messages are assigned `to` all users in group (you can check the message interface) but does contain a `from` and a `gid`
+- Messages are looped, signed and sent to all topics(users) in the group so they all are notified
 - Info messages from the system are fired when new members/admins are added, members/admins are removed, any user leaves or group details are updated
 
 ## Support
