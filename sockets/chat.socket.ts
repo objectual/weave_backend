@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import { v4 as uuidv4 } from 'uuid';
-import { RedisService } from "../app/cache/redis.service"; 
-import { IMessage, Messages } from "../app/http/services/kafka.service"; 
+import { RedisService } from "../app/cache/redis.service";
+import { IMessage, Messages } from "../app/http/services/kafka.service";
 import { ResponseSockets } from "./response.socket";
 
 class Chat extends Messages {
@@ -62,26 +62,37 @@ export class ChatSockets extends Chat {
     get routes() {
         this.observer(this._socket['user'].profile.phoneNo, this._socket['user'].profile.userId)
 
-        this._socket.on("group-message", async ({ topic, data }, callback) => {
+        this._socket.on("group-message", async ({ gid, data }, callback) => {
             try {
-                data = JSON.parse(data)
-                if (data.gid != null) {
-                    data['id'] = uuidv4();
-                    data['createdAt'] = new Date().getTime() / 1000;
+                if (gid != null) {
+                    let roomMembers = await this.getGroup(gid)
+                    if (roomMembers == null) {
+                        this.response.error("Group not found", null)
+                    } else {
+                        data = JSON.parse(data)
+                        roomMembers = _.reject(roomMembers, x => data.from == x)
+                        Promise.all(roomMembers.map(async x => {
+                            let message = _.clone(data)
+                            message['id'] = uuidv4();
+                            message['to'] = x
+                            message['createdAt'] = new Date().getTime() / 1000;
 
-                    let presence = await this.checkPresence(data.to)
+                            let presence = await this.checkPresence(message.to)
 
-                    // Store message to store if user is not available
-                    if (presence.presence != "ONLINE") {
-                        //Store message for 30 days
-                        console.log("Setting message to store", data.id)
-                        RedisService.setData(data, `${data.id}|${data.to}|${data.from}|message`, 720 * 60 * 60 * 1000)
+                            // Store message to store if user is not available
+                            if (presence.presence != "ONLINE") {
+                                //Store message for 30 days
+                                console.log("Setting message to store", data.id)
+                                RedisService.setData(message, `${message.id}|${message.to}|${message.from}|message`, 720 * 60 * 60 * 1000)
+                            }
+
+                            this.publisher(x, message)
+                        })).then(() => {
+                            callback();
+                        })
                     }
-
-                    this.publisher(topic, data)
-                    callback();
                 } else {
-                    throw new Error("Group not found")
+                    this.response.error("Group not found", null)
                 }
             } catch (error) {
                 this.response.error("There was error in your request", null)
@@ -107,6 +118,57 @@ export class ChatSockets extends Chat {
                 this.publisher(topic, data)
                 callback();
 
+            } catch (error) {
+                this.response.error("There was error in your request", null)
+            }
+        })
+
+        this._socket.on("group-presence", async (gid, callback) => {
+            try {
+                if (gid != null) {
+                    let roomMembers = await this.getGroup(gid)
+                    if (roomMembers == null) {
+                        this.response.error("Group not found", null)
+                    } else {
+                        Promise.all(roomMembers.map(async x => {
+                            let phone = Number(x)
+                            // This is used to get the presence of other users 
+                            let users = await RedisService.searchData(`${phone}|*|user`)
+                            let user;
+                            if (users.length > 0) {
+                                user = _.clone(users[0])
+                                let presence = await this.checkPresence(phone)
+                                if (presence == null) {
+                                    // This would happen when you're developing or the user is very new to the system and does not have an encryption key
+                                    return null;
+                                } else {
+                                    user['presence'] = presence
+                                    return user;
+                                }
+                            } else {
+                                user = await this.getUser(phone)
+                                if (user == null) {
+                                    return null;
+
+                                } else {
+                                    let presence = await this.checkPresence(phone)
+                                    if (presence == null) {
+                                        // This would happen when you're developing or the user is very new to the system and does not have an encryption key
+                                        return null;
+                                    } else {
+                                        user['presence'] = presence
+                                        return user;
+                                    }
+                                }
+                            }
+                        })).then(users => {
+                            users = _.reject(users, k => k == null)
+                            callback(users)
+                        })
+                    }
+                } else {
+                    this.response.error("Group not found", null)
+                }
             } catch (error) {
                 this.response.error("There was error in your request", null)
             }

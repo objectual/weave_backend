@@ -19,7 +19,6 @@ const die = setTimeout(function () {
     process.exit(1)
 }, 10000);
 
-
 async function encryptStringWithPgpPublicKey(relativeOrAbsolutePathToPublicKeys, myPrivateKeyPath, plaintext, passphrase) {
     const encrypted = await openpgp.encrypt({
         message: await openpgp.createMessage({ text: plaintext }), // input as Message object
@@ -56,11 +55,9 @@ async function decryptStringWithPgpPrivateKey(myPrivateKey, signeePublicKey, toD
     }
 }
 
-// node .\messageReceiver.js --jwt=<JWT FROM SERVER>
-//----------------------------------------- CONFIGURATION BLOCK.
-// This simulates a user going online and receiving old messages and marks as delivered(✓D) and as read(✓R). 
-__main__()
-
+// node .\messageSender.js --jwt=<JWT FROM SERVER> --group=<GROUP ID> --msg=<TEXT> (Optional)
+//----------------------------------------- CONFIGURATION BLOCK. 
+__main__();
 function __main__() {
     try {
         socket.on('connect', () => {
@@ -74,6 +71,7 @@ function __main__() {
 
                 socketListeners()
                 consumerListeners(message.data.user.profile.phoneNo, `./keys/${message.data.user.profile.phoneNo}`)
+                sendMessages(message.data.user.profile.phoneNo)
             });
         });
     } catch (e) {
@@ -81,7 +79,45 @@ function __main__() {
         process.exit(1)
     }
 }
+function sendMessages(myPhoneNo) {
+    console.log("Message sender started...")
+    if (args['--group'] == null) {
+        console.log("GROUP ID REQUIRED")
+        process.exit(1)
+    }
+    getGroupPresence(args['--group'], data => {
+        console.log(data)
+        let publicKeysOfRecipients = data.map(user => {
+            // Updating receiver's public key to sign message with their key
+            fs.writeFileSync(`./keys/${user.phoneNo}.pub`, Buffer.from(user.presence.pub, 'base64'));
+            return `./keys/${user.phoneNo}.pub`
+        })
+        setInterval(async () => {
+            let msg = args['--msg'] != null ? args['--msg'] : `${new Date().getTime() / 1000}`
+            let enc_msg = await encryptStringWithPgpPublicKey(publicKeysOfRecipients, `./keys/${myPhoneNo}`, msg, passphrase)
 
+            socket.emit('group-message', {
+                gid: args['--group'],
+                data: JSON.stringify({
+                    value: enc_msg,
+                    type: "TEXT",
+                    gid: args['--group'],
+                    from: myPhoneNo
+                })
+            }, (error) => {
+                if (error) {
+                    console.log(error);
+                }
+            });
+        }, 5 * 1000) //sec to ms 
+    })
+}
+
+function getGroupPresence(gid, callback) {
+    socket.emit("group-presence", gid, (data) => {
+        return callback(data)
+    })
+}
 function getUserPresence(phoneNo, callback) {
     socket.emit("presence", phoneNo, (data) => {
         return callback(data)
@@ -91,29 +127,29 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
     console.log("Consumer listener attached")
     socket.on('message', async message => { // Background 
         /* SAMPLE RESPONSE
-       {
-         text: 'message',
-         message: '{
-           // value is ALWAYS encrypted but it can either be 
-           //   1. message if the type is TEXT or MEDIA, or it can be
-           //   2. below keywords if the type is STATE
-               // deleted = "DELETED", // used for delete message for all users scenario
-               // liked = "LIKED", // used for liked message for all users scenario
-               // read = "READ",
-               // delivered = "DELIVERED",
-               // sent = "SENT"
-             "value":"gyApweZu6/Cy8ag94q8RVdjlSAtIxk242RBse/XPDMbEjERdTyDJmY855El6R+e+Gn98d+Q+djGIzJtCpsqIynZS4tRWM52HWqIjvpyvFY3yV3WvtGO0ZCtzSuhAX40ZCOz4F2AXPUvRj5fLV6awctpsW46BdyLXw9CKDeXpp4Q=",
-             "type":"TEXT", <- MEDIA(upload URI of media separated by pipes to add any type of metadata) | INFO | TEXT | STATE | PRESENCE
-             "to":"923343664550",
-             "from":"923323070980", <- <PHONE NO OF USER> | SYSTEM
-             "id":"5275cf9c-a235-40c5-a562-b3a1fadc9b19",
-             "pid": <OPTIONAL PARENT MSG ID IN STATE MESSAGES>,
-             "gid": <OPTIONAL GROUP MSG ID>,
-             "createdAt":1626461272.564
-           }',
-         time: 1626461272592
-       }
-       */
+        {
+          text: 'message',
+          message: '{
+            // value is ALWAYS encrypted but it can either be 
+            //   1. message if the type is TEXT or MEDIA, or it can be
+            //   2. below keywords if the type is STATE
+                // deleted = "DELETED", // used for delete message for all users scenario
+                // liked = "LIKED", // used for liked message for all users scenario
+                // read = "READ",
+                // delivered = "DELIVERED",
+                // sent = "SENT"
+              "value":"gyApweZu6/Cy8ag94q8RVdjlSAtIxk242RBse/XPDMbEjERdTyDJmY855El6R+e+Gn98d+Q+djGIzJtCpsqIynZS4tRWM52HWqIjvpyvFY3yV3WvtGO0ZCtzSuhAX40ZCOz4F2AXPUvRj5fLV6awctpsW46BdyLXw9CKDeXpp4Q=",
+              "type":"TEXT", <- MEDIA(upload URI of media separated by pipes to add any type of metadata) | INFO | TEXT | STATE | PRESENCE
+              "to":"923343664550",
+              "from":"923323070980", <- <PHONE NO OF USER> | SYSTEM
+              "id":"5275cf9c-a235-40c5-a562-b3a1fadc9b19",
+              "pid": <OPTIONAL PARENT MSG ID IN STATE MESSAGES>,
+              "gid": <OPTIONAL GROUP MSG ID>,
+              "createdAt":1626461272.564
+            }',
+          time: 1626461272592
+        }
+        */
         message = JSON.parse(message.message)
         if (message.to == myPhoneNo) {
             // To check if there is a message from any other users.
@@ -125,9 +161,9 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
                 decn_msg = await decryptStringWithPgpPrivateKey(privateKeyPath, `./keys/${message.from}.pub`, message.value, passphrase)
             }
             console.log("Message received: ", message.from, "Decrypted: ", decn_msg)  // <-- This is the actual item to save 
+
             if (message.type == "TEXT" || message.type == "MEDIA") {
-                // NEED TO SEND BACK READ OR DELIVERED TO OTHER USER ONLY IF THE MESSAGE TYPE IS "TEXT" OR "MEDIA"
-                // DO NO SEND READ OR DELIVERED STATE MESSAGE TO MESSAGE TYPE "INFO", "STATE" AND "PRESENCE"
+                // NEED TO SEND BACK READ OR DELIVERED TO OTHER USER
 
                 // get presence of message sender
                 getUserPresence(message.from, async data => {
@@ -162,8 +198,8 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
                     socket.emit('message', {
                         topic: message.from,
                         data: JSON.stringify({
-                            gid: message.gid, // Need to attach this broadcast which group received state change
                             pid: message.id, // Need to attach this broadcast which message received state change
+                            gid: message.gid, // Need to attach this broadcast which group received state change
                             value: enc_msg_delivered,
                             type: "STATE",
                             to: message.from,
@@ -209,3 +245,4 @@ function socketListeners() {
         console.log("Error received: ", message)
     });
 }
+

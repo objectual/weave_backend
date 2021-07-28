@@ -94,10 +94,13 @@ export class Group {
 
             let messages = []
             if (req.body.members != null && req.body.members.connect != null && req.body.members.connect.id.length > 0 && (_.includes(req['room'].admins, req['user'].id) || req['room'].owner.profile.userId == req['user'].id)) {
-                body.members['connect'] = req.body.members.connect.id.map(x => { return { id: x } }).filter(function (idObject) {
-                    // Skip connections of users who are already in room
-                    return !_.find(old_room.members, function (o) { return o.profile.userId == idObject.id; });
-                });
+                body.members['connect'] = req.body.members.connect.id.map(x => { return { id: x } })
+                if (old_room.members.length > 0) {
+                    body.members['connect'] = req.body.members.connect.id.map(x => { return { id: x } }).filter(function (idObject) {
+                        // Skip connections of users who are already in room
+                        return !_.find(old_room.members, function (o) { return o.profile.userId == idObject.id; });
+                    });
+                }
                 if (body.members.connect.length > 0) {
                     // Notify Users of new group members
                     let newUsers = await userService.find({
@@ -111,10 +114,16 @@ export class Group {
                         .forEach(message => messages.push(message))
                 }
             } else if (req.body.members != null && req.body.members.disconnect != null && req.body.members.disconnect.id.length > 0 && (_.includes(req['room'].admins, req['user'].id) || req['room'].owner.profile.userId == req['user'].id)) {
-                body.members['disconnect'] = req.body.members.disconnect.id.map(x => { return { id: x } }).filter(function (idObject) {
-                    // Skip connections of users who are already in room
-                    return _.find(old_room.members, function (o) { return o.profile.userId == idObject.id; });
-                });
+                // When user is removed from group, that user is also removed from admin by default
+                body.admins['disconnect'] = [...req.body.members.disconnect.id.map(x => { return { id: x } })]
+
+                body.members['disconnect'] = req.body.members.disconnect.id.map(x => { return { id: x } })
+                if (old_room.members.length > 0) {
+                    body.members['disconnect'] = req.body.members.disconnect.id.map(x => { return { id: x } }).filter(function (idObject) {
+                        // Skip connections of users who are already in room
+                        return _.find(old_room.members, function (o) { return o.profile.userId == idObject.id; });
+                    });
+                }
                 if (body.members.disconnect.length > 0) {
                     // Notify Deleting users of old group members
                     let oldUsers = await userService.find({
@@ -130,10 +139,13 @@ export class Group {
             }
 
             if (req.body.admins != null && req.body.admins.connect != null && req.body.admins.connect.id.length > 0 && req['room'].owner.profile.userId == req['user'].id) {
-                body.admins['connect'] = req.body.admins.connect.id.map(x => { return { id: x } }).filter(function (idObject) {
-                    // Skip connections of users who are already in room
-                    return !_.find(old_room.admins, function (o) { return o.profile.userId == idObject.id; });
-                });
+                body.admins['connect'] = req.body.admins.connect.id.map(x => { return { id: x } })
+                if (old_room.admins.length > 0) {
+                    body.admins['connect'] = req.body.admins.connect.id.map(x => { return { id: x } }).filter(function (idObject) {
+                        // Skip connections of users who are already in room
+                        return !_.find(old_room.admins, function (o) { return o.profile.userId == idObject.id; });
+                    });
+                }
                 if (body.admins.connect.length > 0) {
                     // Notify new admin to members
                     let newAdmins = await userService.find({
@@ -147,10 +159,13 @@ export class Group {
                         .forEach(message => messages.push(message))
                 }
             } else if (req.body.admins != null && req.body.admins.disconnect != null && req.body.admins.disconnect.id.length > 0 && req['room'].owner.profile.userId == req['user'].id) {
-                body.admins['disconnect'] = req.body.admins.disconnect.id.map(x => { return { id: x } }).filter(function (idObject) {
-                    // Skip connections of users who are already in room
-                    return _.find(old_room.members, function (o) { return o.profile.userId == idObject.id; });
-                });
+                body.admins['disconnect'] = [...req.body.admins.disconnect.id.map(x => { return { id: x } })]
+                if (old_room.admins.length > 0) {
+                    body.admins['disconnect'] = [...req.body.admins.disconnect.id.map(x => { return { id: x } }).filter(function (idObject) {
+                        // Skip connections of users who are already in room
+                        return _.find(old_room.admins, function (o) { return o.profile.userId == idObject.id; });
+                    })]
+                }
                 if (body.admins.disconnect.length > 0) {
                     // Notify removed admin to members
                     let oldAdmins = await userService.find({
@@ -166,10 +181,10 @@ export class Group {
             }
             let room = await roomService.update({ id: req.params.id }, body);
 
-            let ids = _.uniq([room.owner.profile.userId, ...room.admins.map(a => a.profile.userId), ...room.members.map(a => a.profile.userId)])
+            let ids = _.uniq([old_room.owner.profile.userId, ...old_room.members.map(a => a.profile.userId), ...room.members.map(a => a.profile.userId)])
             if (messages.length > 0) {
                 Promise.all(
-                    messages.map(x => new Messages(x).getEncryptedMessages(ids, room.id).then(messages => messages))
+                    messages.map(x => new Messages(x).getEncryptedMessages(ids, old_room.id).then(messages => messages))
                 )
                     .then(kmessages => {
                         kafkaService.producer(kmessages.flat())
@@ -190,8 +205,13 @@ export class Group {
                 return;
             }
             let roomDelete = await roomService.delete({ id: req.params.id, userId: req['user'].id })
-            // Notify all members of group delete update
-
+            // Notify all members of group delete update 
+            const kafkaService = new KafkaService();
+            let ids = _.uniq([room.owner.profile.userId, ...room.members.map(a => a.profile.userId)])
+            const messagesService = new Messages(`${req['user'].data.profile.phoneNo} deleted group`)
+            let messages = await messagesService.getEncryptedMessages(ids, room.id).then(messages => messages)
+            kafkaService.producer(messages)
+            // NOTIFIER END
             Sender.send(res, { success: true, data: roomDelete, msg: "Room removed", status: 200 })
         }
         catch (error) {
@@ -215,7 +235,14 @@ export class Group {
                 // Notify Users of group member leave
 
                 let roomUpdate = await roomService.update({ id: req.params.id }, body);
-                Sender.send(res, { success: true, data: roomUpdate, status: 200, msg: "Group left" })
+                // NOTIFY MEMBERS AND ADMINS ABOUT USER LEAVE
+                const kafkaService = new KafkaService();
+                let ids = _.uniq([roomUpdate.owner.profile.userId, ...roomUpdate.members.map(a => a.profile.userId)])
+                const messagesService = new Messages(`${req['user'].data.profile.phoneNo} left group`)
+                let messages = await messagesService.getEncryptedMessages(ids, roomUpdate.id).then(messages => messages)
+                kafkaService.producer(messages)
+                // NOTIFIER END
+                Sender.send(res, { success: true, data: roomUpdate, status: 200, msg: "Group updated" })
             }
         }
         catch (error) {

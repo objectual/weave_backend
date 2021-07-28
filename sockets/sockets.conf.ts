@@ -5,7 +5,6 @@ export async function userConfigure(socket) {
     return new Promise(async (resolve, reject) => {
         const userService = new UserService()
         const user = await userService.findOneAdmin({ id: socket['decoded_token'].id, blocked: false }).catch(e => reject(e.message))
-        console.log(user)
         resolve(user)
     })
 }

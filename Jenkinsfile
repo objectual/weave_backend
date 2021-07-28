@@ -24,32 +24,32 @@ pipeline {
     stages {
         stage('Deploy') {
                 parallel {
-                    stage('Heroku Deployment') {
-                        steps {
-                            echo 'Push to Heroku Repo'
-                            withCredentials([
-                                usernamePassword(
-                                    credentialsId: 'heroku',
-                                    usernameVariable: 'USER',
-                                    passwordVariable: 'PASS'
-                                )]) {
-                                    sh 'git push https://$USER:$PASS@git.heroku.com/iweave.git HEAD:master'
-                                }
-                        }
-                    }
+                    // stage('Heroku Deployment') {
+                    //     steps {
+                    //         echo 'Push to Heroku Repo'
+                    //         withCredentials([
+                    //             usernamePassword(
+                    //                 credentialsId: 'heroku',
+                    //                 usernameVariable: 'USER',
+                    //                 passwordVariable: 'PASS'
+                    //             )]) {
+                    //                 sh 'git push https://$USER:$PASS@git.heroku.com/iweave.git HEAD:master'
+                    //             }
+                    //     }
+                    // }
 
-                    stage('GCP Deployment') {
+                    stage('Cloud Deployment') {
                         steps {
                             script {
                                 try {
                                 echo 'Deploying Code'
                                 withCredentials([
                                         usernamePassword(
-                                            credentialsId: 'ahmed-git-ITSOL',
+                                            credentialsId: 'git-ITSOL',
                                             usernameVariable: 'USER',
                                             passwordVariable: 'PASS'
                                         )]) {
-                                            sshagent (credentials: ['GCP-Admin']) {
+                                            sshagent (credentials: ['Cloud-Admin']) {
                                                 sh 'ssh -o StrictHostKeyChecking=no root@ "bash master-pull.sh $USER $PASS "'
                                                 sh 'ssh -o StrictHostKeyChecking=no root@ "bash docker-up.sh"'
                                             }

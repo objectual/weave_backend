@@ -8,6 +8,8 @@ import * as _ from "lodash"
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from 'uuid';
+import { IRoom } from "../models/room.model";
+import { ChatRoomService } from "./chat.service";
 
 export interface IMessage {
     id: string;
@@ -56,8 +58,9 @@ export class Messages {
         // and fires to every user. Maturity Level 3
     }
     async encryptStringWithPgpPublicKey(relativeOrAbsolutePathToPublicKeys, myPrivateKeyPath, plaintext, passphrase) {
-        console.log('relativeOrAbsolutePathToPublicKeys :', relativeOrAbsolutePathToPublicKeys);
-        const encrypted = await openpgp.encrypt({
+        // console.log('myPrivateKeyPath :', fs.readFileSync(path.resolve(myPrivateKeyPath), "utf8"));
+        // console.log('relativeOrAbsolutePathToPublicKeys :', relativeOrAbsolutePathToPublicKeys);
+        let options = {
             message: await openpgp.createMessage({ text: plaintext }), // input as Message object
             encryptionKeys: await Promise.all(relativeOrAbsolutePathToPublicKeys.map(keyPath => path.resolve(keyPath)).map(async keyPath => {
                 return await openpgp.readKey({ armoredKey: fs.readFileSync(keyPath, "utf8") });
@@ -67,8 +70,10 @@ export class Messages {
             signingKeys: await openpgp.decryptKey({
                 privateKey: await openpgp.readPrivateKey({ armoredKey: fs.readFileSync(path.resolve(myPrivateKeyPath), "utf8") }),
                 passphrase
-            }) // optional - This is the key of user who signed this message. For signature verification
-        });
+            })
+        }
+        const encrypted = await openpgp.encrypt(options);
+        // console.log("encMess: ", encrypted, Buffer.from(encrypted).toString("base64"))
         return Buffer.from(encrypted).toString("base64")
     }
     async getUserPresence(phone) {
@@ -76,7 +81,7 @@ export class Messages {
             let users = await RedisService.searchData(`${phone}|*|user`)
             let user;
             if (users.length > 0) {
-                console.log("SENDING FROM REDIS")
+                // console.log("SENDING FROM REDIS")
                 user = _.clone(users[0])
                 let presence = await this.checkPresence(phone)
                 if (presence == null) {
@@ -134,9 +139,29 @@ export class Messages {
             if (user == null) {
                 resolve(null)
             } else {
-                console.log("USER CALLED FROM DATABASE", phone)
+                // console.log("USER CALLED FROM DATABASE", phone)
                 await RedisService.setData(user.profile, `${user.profile.phoneNo}|${user.profile.firstName}|${user.profile.lastName}|${user.profile.userId}|user`, 0)
                 resolve(user);
+            }
+        })
+    }
+    async getGroup(gid: string): Promise<string[]> {
+        return new Promise(async (resolve, reject) => {
+            let memebrs = await RedisService.getData(`${gid}|group`)
+
+            if (memebrs != null) {
+                // PRESENCE EITHER AWAY OR ONLINE 
+                resolve(memebrs);
+            }else{
+                const roomService = new ChatRoomService()
+                const room = await roomService.findOne({ id: gid })
+                if (room == null) {
+                    resolve(null)
+                } else {
+                    // console.log("ROOM CALLED FROM DATABASE", gid)
+                    await RedisService.setData(room.members.map(x => x.profile.phoneNo), `${room.id}|group`, 0)
+                    resolve(room.members.map(x => x.profile.phoneNo));
+                }
             }
         })
     }
@@ -150,7 +175,7 @@ export class Messages {
             const userService = new UserService()
             let { users } = await userService.find({ id: { in: to }, blocked: false })
             let phoneNos = []
-            console.log(users)
+            // console.log(users)
             if (users.length != 0) {
                 let keys = users.map(u => {
                     if (u.encryption == null) {
@@ -162,7 +187,7 @@ export class Messages {
                     }
                 })
                 keys = _.reject(keys, k => k == null)
-                console.log(keys)
+                // console.log(keys)
                 if (keys.length > 0) {
                     let enc_message = await this.encryptStringWithPgpPublicKey(keys, 'config/cert/weave', this.message, process.env.PASSPHRASE)
                     keys.forEach(k => fs.unlink(k, () => { }))
@@ -206,7 +231,7 @@ export class KafkaService {
                         numPartitions: 2
                     }]
                 })
-                console.log("TOPICS CREATED .... ", topic)
+                // console.log("TOPICS CREATED .... ", topic)
                 await admin.disconnect()
                 resolve(true)
             } catch (e) {
@@ -221,27 +246,17 @@ export class KafkaService {
             await producer.connect()
             try {
                 resolve(Promise.all(data.map(async message => {
-                    try {
-                        RedisService.setData(data, `${message.id}|${message.to}|${message.from}|message`, 720 * 60 * 60 * 1000)
-                        let result = await producer.send({
-                            topic: message.to,
-                            messages: [{
-                                value: JSON.stringify(message),
-                                partition: 1
-                            }]
-                        })
-                        console.log(`Sent ${JSON.stringify(result)}`,{
-                            topic: message.to,
-                            messages: [{
-                                value: JSON.stringify(message),
-                                partition: 1
-                            }]
-                        })
-                        return result
-                    } catch (pe) {
-                        console.log(pe)
-                        return pe
+                    RedisService.setData(data, `${message.id}|${message.to}|${message.from}|message`, 720 * 60 * 60 * 1000)
+                    let options = {
+                        topic: message.to,
+                        messages: [{
+                            value: JSON.stringify(message),
+                            partition: 1
+                        }]
                     }
+                    let result = await producer.send(options)
+                    console.log(`Sent ${JSON.stringify(result)}`, options)
+                    return result
                 })).then(async results => {
                     await producer.disconnect()
                     return results
@@ -253,25 +268,5 @@ export class KafkaService {
                 reject(e)
             }
         })
-    }
-
-    async consumer(topic: string, id: string) {
-        try {
-            const consumer = this.kafka.consumer({ groupId: id })
-            await consumer.connect()
-            await consumer.subscribe({
-                topic: topic,
-                fromBeginning: true
-            })
-            let messages = []
-            await consumer.run({
-                eachMessage: async result => {
-                    console.log(`RVD msg: ${result.message.value} on partition ${result.partition}`)
-                    messages.push(result)
-                }
-            })
-        } catch (e) {
-            return e
-        }
     }
 }

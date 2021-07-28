@@ -62,7 +62,7 @@ class ValidateRoom {
             return new Promise(async (resolve, reject) => {
                 let friendCheck = await this.alreadyFriends(friendId, userId, 0)
                 if (!friendCheck) {
-                    reject("Cannot create group")
+                    reject("Cannot connect non friend users to group")
                 } else {
                     resolve(true);
                 }

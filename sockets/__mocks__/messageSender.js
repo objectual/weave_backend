@@ -36,7 +36,7 @@ async function encryptStringWithPgpPublicKey(relativeOrAbsolutePathToPublicKeys,
 }
 async function decryptStringWithPgpPrivateKey(myPrivateKey, signeePublicKey, toDecrypt, passphrase) {
     try {
-        const { data: decrypted, signatures } = await openpgp.decrypt({
+        let options = {
             message: await openpgp.readMessage({
                 armoredMessage: Buffer.from(toDecrypt, "base64").toString('ascii')// parse armored message
             }),
@@ -45,7 +45,8 @@ async function decryptStringWithPgpPrivateKey(myPrivateKey, signeePublicKey, toD
                 privateKey: await openpgp.readPrivateKey({ armoredKey: fs.readFileSync(path.resolve(myPrivateKey), "utf8") }),
                 passphrase
             })
-        });
+        }
+        const { data: decrypted, signatures } = await openpgp.decrypt(options);
         // check signature validity (signed messages only)
         await signatures[0].verified; // throws on invalid signature 
         return decrypted
@@ -117,7 +118,24 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
         /* SAMPLE RESPONSE
         {
           text: 'message',
-          message: '{"value":"gyApweZu6/Cy8ag94q8RVdjlSAtIxk242RBse/XPDMbEjERdTyDJmY855El6R+e+Gn98d+Q+djGIzJtCpsqIynZS4tRWM52HWqIjvpyvFY3yV3WvtGO0ZCtzSuhAX40ZCOz4F2AXPUvRj5fLV6awctpsW46BdyLXw9CKDeXpp4Q=","type":"TEXT","to":"923343664550","from":"923323070980","id":"5275cf9c-a235-40c5-a562-b3a1fadc9b19","createdAt":1626461272.564}',
+          message: '{
+            // value is ALWAYS encrypted but it can either be 
+            //   1. message if the type is TEXT or MEDIA, or it can be
+            //   2. below keywords if the type is STATE
+                // deleted = "DELETED", // used for delete message for all users scenario
+                // liked = "LIKED", // used for liked message for all users scenario
+                // read = "READ",
+                // delivered = "DELIVERED",
+                // sent = "SENT"
+              "value":"gyApweZu6/Cy8ag94q8RVdjlSAtIxk242RBse/XPDMbEjERdTyDJmY855El6R+e+Gn98d+Q+djGIzJtCpsqIynZS4tRWM52HWqIjvpyvFY3yV3WvtGO0ZCtzSuhAX40ZCOz4F2AXPUvRj5fLV6awctpsW46BdyLXw9CKDeXpp4Q=",
+              "type":"TEXT", <- MEDIA(upload URI of media separated by pipes to add any type of metadata) | INFO | TEXT | STATE | PRESENCE
+              "to":"923343664550",
+              "from":"923323070980", <- <PHONE NO OF USER> | SYSTEM
+              "id":"5275cf9c-a235-40c5-a562-b3a1fadc9b19",
+              "pid": <OPTIONAL PARENT MSG ID IN STATE MESSAGES>,
+              "gid": <OPTIONAL GROUP MSG ID>,
+              "createdAt":1626461272.564
+            }',
           time: 1626461272592
         }
         */
@@ -127,11 +145,12 @@ function consumerListeners(myPhoneNo, privateKeyPath) {
             let decn_msg;
             if (message.type == "INFO" && message.from == "SYSTEM") {
                 // This is incase a message is received from the system which does not have a phoneNo on it, just a SYSTEM Keyword
-                decn_msg = await decryptStringWithPgpPrivateKey(privateKeyPath, `./keys/messagesPGP.pub`, message.value, passphrase)
+                decn_msg = await decryptStringWithPgpPrivateKey(privateKeyPath, `./keys/SystemMessagesPGP.pub`, message.value, passphrase)
             } else {
                 decn_msg = await decryptStringWithPgpPrivateKey(privateKeyPath, `./keys/${message.from}.pub`, message.value, passphrase)
             }
-            console.log("Message from Kafka received: ", message, "Decrypted: ", decn_msg)  // <-- This is the actual item to save 
+            console.log("Message received: ", message.from, "Decrypted: ", decn_msg)  // <-- This is the actual item to save 
+
             if (message.type == "TEXT" || message.type == "MEDIA") {
                 // NEED TO SEND BACK READ OR DELIVERED TO OTHER USER
 
