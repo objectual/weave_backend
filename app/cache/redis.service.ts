@@ -7,8 +7,15 @@ let scanner: any;
 export const RedisService = new class RedisService {
     connectCache(): createClient {
         // console.log("❗ Service Connecting to Redis...")
-        let origin = {}
+        let origin = {
+            port: process.env.REDIS_PORT, // replace with your port
+            host: process.env.REDIS_HOST, // replace with your hostanme or IP address
+        }
         // if (process.env.NODE_ENV == "production") { // ONLY USE IN PRODUCTION READY ENVIRONMENT
+
+        // REDIS_HOST=redis-14496.c81.us-east-1-2.ec2.cloud.redislabs.com
+        // REDIS_PORT=14496
+        // REDIS_PASS=5ltxkq576jCw8nuhCKWWlwZCIOxam1NS
         //     origin = {
         //         port: process.env.REDIS_PORT, // replace with your port
         //         host: process.env.REDIS_HOST, // replace with your hostanme or IP address

@@ -22,7 +22,12 @@ module.exports = function (server) {
         clientId: "messageservice",
         brokers: [`${process.env.IP}:29092`]
     })
-    const pubClient = new RedisClient({});
+    const pubClient = new RedisClient(
+        {
+            port: process.env.REDIS_PORT, // replace with your port
+            host: process.env.REDIS_HOST, // replace with your hostanme or IP address
+        }
+    );
     const subClient = pubClient.duplicate();
 
     io.adapter(createAdapter({ pubClient, subClient }));

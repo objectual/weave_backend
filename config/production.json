@@ -1,10 +1,10 @@
 {
-    "origin": "https://iweave.herokuapp.com",
+    "origin": "https://dev.iweave.com",
     "front": "",
-    "fb-callback": "https://iweave.herokuapp.com/auth/facebook/callback",
-    "g-callback": "https://iweave.herokuapp.com/auth/google/callback", 
+    "fb-callback": "https://dev.iweave.com/auth/facebook/callback",
+    "g-callback": "https://dev.iweave.com/auth/google/callback", 
     "db": {
-        "name": "production"
+        "name": "iweave"
     },
     "environment": "production"
 }

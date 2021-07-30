@@ -4,14 +4,16 @@ FROM node:13-alpine
 # Set working directory. Paths will be relative this WORKDIR.
 WORKDIR /app
 
-# Install dependencies
-ADD package*.json ./
 # Copy source files from host computer to the container
 ADD . .
 
-RUN npm install typescript -g
+
+# Install dependencies
+ADD package*.json ./
+
 RUN npm install --save-dev @types/node
-RUN npm install
+RUN npm install && npm install typescript dotenv -g
+RUN tsc
 
 # Run the app
 CMD [ "npm", "start" ]

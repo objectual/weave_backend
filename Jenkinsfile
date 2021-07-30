@@ -50,8 +50,8 @@ pipeline {
                                             passwordVariable: 'PASS'
                                         )]) {
                                             sshagent (credentials: ['Cloud-Admin']) {
-                                                sh 'ssh -o StrictHostKeyChecking=no root@ "bash master-pull.sh $USER $PASS "'
-                                                sh 'ssh -o StrictHostKeyChecking=no root@ "bash docker-up.sh"'
+                                                sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash master-pull.sh $USER $PASS "'
+                                                sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash docker-up.sh"'
                                             }
                                         }
                                 } catch (err) {
