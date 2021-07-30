@@ -10,6 +10,7 @@ ADD package*.json ./
 ADD . .
 
 RUN npm install typescript -g
+RUN npm install --save-dev @types/node
 RUN npm install
 
 # Run the app
