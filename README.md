@@ -13,10 +13,6 @@
   <a href="#support">Support</a> • 
 </p>
 
-<p align="center"> 
-<a  href='http://46.101.87.98:9000/job/Weave%20Deployment/job/master/'><img src='http://46.101.87.98:9000/job/Weave%20Deployment/job/master/badge/icon'></a>
-</p>
-
 ---
 
 ## Installation
