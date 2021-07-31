@@ -91,4 +91,21 @@ pipeline {
                 }
         }
     }
+    post {
+       // only triggered when blue or green sign
+       success {
+           slackSend color: "good", message: "[Weave CI] Code deployed and processes restarted 👍 
+           1. [Prisma Dev Studio](http://46.101.87.98:5555/)
+           2. [Project URI](https://dev.iweave.com)
+           3. [Portainer](http://46.101.87.98:5000/)"
+       }
+       // triggered when red sign
+       failure {
+           slackSend color: "danger", message: "[Weave CI] Opps. Something's wrong with the deployment. 😢"
+       }
+       // trigger every-works
+       always {
+           slackSend color: "warning", message: "[Weave CI] All done with my job 💪"
+       }
+    }
 }
