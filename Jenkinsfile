@@ -94,7 +94,7 @@ pipeline {
     post {
        // only triggered when blue or green sign
        success {
-           slackSend color: "good", message: "[Weave CI] Code deployed and processes restarted 👍\n1. [Prisma Dev Studio](http://46.101.87.98:5555/)\n2. [Project URI](https://dev.iweave.com)\n3. [Portainer](http://46.101.87.98:5000/)"
+           slackSend color: "good", message: "[Weave CI] Code deployed and processes restarted 👍\nHelpful Links\n\n ```1. [Prisma Dev Studio] (http://46.101.87.98:5555/)\n2. [Project URI] (https://dev.iweave.com)\n3. [Portainer] (http://46.101.87.98:5000/)\n4. [Documentation] (https://documenter.getpostman.com/view/15958771/TzY69EUQ)"
        }
        // triggered when red sign
        failure {
