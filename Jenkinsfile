@@ -38,31 +38,31 @@ pipeline {
                     //     }
                     // }
 
-                    stage('Cloud Deployment For Development') {
-                        when {
-                            branch 'development'
-                        }
-                        steps {
-                            script {
-                                try {
-                                echo 'Deploying Code'
-                                withCredentials([
-                                        usernamePassword(
-                                            credentialsId: 'git-ITSOL',
-                                            usernameVariable: 'USER',
-                                            passwordVariable: 'PASS'
-                                        )]) {
-                                            sshagent (credentials: ['Cloud-Admin']) {
-                                                sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash dev-pull.sh $USER $PASS "'
-                                                sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash pm2run.sh weave_dev"'
-                                            }
-                                        }
-                                } catch (err) {
-                                sh 'Could not connect to HOST'
-                                }
-                            }
-                        }
-                    }
+                    // stage('Cloud Deployment For Development') {
+                    //     when {
+                    //         branch 'development'
+                    //     }
+                    //     steps {
+                    //         script {
+                    //             try {
+                    //             echo 'Deploying Code'
+                    //             withCredentials([
+                    //                     usernamePassword(
+                    //                         credentialsId: 'git-ITSOL',
+                    //                         usernameVariable: 'USER',
+                    //                         passwordVariable: 'PASS'
+                    //                     )]) {
+                    //                         sshagent (credentials: ['Cloud-Admin']) {
+                    //                             sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash dev-pull.sh $USER $PASS "'
+                    //                             sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash pm2run.sh weave_dev"'
+                    //                         }
+                    //                     }
+                    //             } catch (err) {
+                    //             sh 'Could not connect to HOST'
+                    //             }
+                    //         }
+                    //     }
+                    // }
                 stage('Cloud Deployment For Production') {
                         when {
                             branch 'master'
@@ -79,7 +79,7 @@ pipeline {
                                         )]) {
                                             sshagent (credentials: ['Cloud-Admin']) {
                                                 sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash master-pull.sh $USER $PASS "'
-                                                sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash pm2run.sh weave_dev"'
+                                                sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash pm2run.sh weave"'
                                             }
                                         }
                                 } catch (err) {
