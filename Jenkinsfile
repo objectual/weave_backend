@@ -109,14 +109,13 @@ pipeline {
 }
 @NonCPS
 def sendChangeLogs() {
-    def commitMessages = ""
-    def formatter = new SimpleDateFormat('yyyy-MM-dd HH:mm')
+    def commitMessages = "" 
     def changeLogSets = currentBuild.changeSets
     for (int i = 0; i < changeLogSets.size(); i++) {
         def entries = changeLogSets[i].items
         for (int j = 0; j < entries.length; j++) {
             def entry = entries[j]
-            commitMessages = commitMessages + "${entry.author} ${entry.commitId}:\n${formatter.format(new Date(entry.timestamp))}: *${entry.msg}*\n" 
+            commitMessages = commitMessages + "${entry.author} ${entry.commitId}:\n${new Date(entry.timestamp).format('yyyy-MM-dd HH:mm')}: *${entry.msg}*\n" 
         }
     }
     slackSend color: "good", message: "[Weave CI] Job: `${env.JOB_NAME}`. Starting build with changes:\n${commitMessages}"
