@@ -38,31 +38,31 @@ pipeline {
                     //     }
                     // }
 
-                    // stage('Cloud Deployment For Development') {
-                    //     when {
-                    //         branch 'development'
-                    //     }
-                    //     steps {
-                    //         script {
-                    //             try {
-                    //             echo 'Deploying Code'
-                    //             withCredentials([
-                    //                     usernamePassword(
-                    //                         credentialsId: 'git-ITSOL',
-                    //                         usernameVariable: 'USER',
-                    //                         passwordVariable: 'PASS'
-                    //                     )]) {
-                    //                         sshagent (credentials: ['Cloud-Admin']) {
-                    //                             sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash dev-pull.sh $USER $PASS "'
-                    //                             sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash pm2run.sh weave_dev"'
-                    //                         }
-                    //                     }
-                    //             } catch (err) {
-                    //             sh 'Could not connect to HOST'
-                    //             }
-                    //         }
-                    //     }
-                    // }
+                // stage('Cloud Deployment For Development') {
+                //     when {
+                //         branch 'development'
+                //     }
+                //     steps {
+                //         script {
+                //             try {
+                //             echo 'Deploying Code'
+                //             withCredentials([
+                //                     usernamePassword(
+                //                         credentialsId: 'git-ITSOL',
+                //                         usernameVariable: 'USER',
+                //                         passwordVariable: 'PASS'
+                //                     )]) {
+                //                         sshagent (credentials: ['Cloud-Admin']) {
+                //                             sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash dev-pull.sh $USER $PASS "'
+                //                             sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash pm2run.sh weave_dev"'
+                //                         }
+                //                     }
+                //             } catch (err) {
+                //             sh 'Could not connect to HOST'
+                //             }
+                //         }
+                //     }
+                // }
                 stage('Cloud Deployment For Production') {
                         when {
                             branch 'master'
@@ -77,18 +77,18 @@ pipeline {
                                             usernameVariable: 'USER',
                                             passwordVariable: 'PASS'
                                         )]) {
-                                            sendChangeLogs();
+                                            sendChangeLogs()
                                             sshagent (credentials: ['Cloud-Admin']) {
                                                 sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash master-pull.sh $USER $PASS "'
                                                 sh 'ssh -o StrictHostKeyChecking=no root@46.101.87.98 "bash pm2run.sh weave"'
                                             }
                                         }
                                 } catch (err) {
-                                slackSend color: "danger", message: """
-                                [Weave CI] 
-                                
+                                slackSend color: 'danger', message: """
+                                [Weave CI]
+
                                 Opps. Something's wrong with the deployment. 😢
-                                
+
                                 ${err}
                                 """
                                 }
@@ -99,49 +99,58 @@ pipeline {
         }
     }
     post {
-       // only triggered when blue or green sign
-       success {
-           slackSend color: "good", message: """
-           [Weave CI] 
-           
+        // only triggered when blue or green sign
+        success {
+            slackSend color: 'good', message: '''
+           [Weave CI]
+
            Code deployed and processes restarted 👍
-           
+
            *Helpful Links*
-           
+
            1. [Prisma Dev Studio] (http://46.101.87.98:5555/)
            2. [Project URI] (https://dev.iweave.com)
            3. [Portainer] (http://46.101.87.98:5000/)
            4. [Documentation] (https://documenter.getpostman.com/view/15958771/TzY69EUQ)
-           """
-       }
-       // triggered when red sign
-       failure {
-           slackSend color: "danger", message: "[Weave CI] Opps. Something's wrong with the deployment. 😢"
-       }
-       // trigger every-works
-       always {
-           slackSend color: "warning", message: "[Weave CI] All done with my job 💪"
-       }
+           '''
+        }
+        // triggered when red sign
+        failure {
+            slackSend color: 'danger', message: "[Weave CI] Opps. Something's wrong with the deployment. 😢"
+        }
+        // trigger every-works
+        always {
+            slackSend color: 'warning', message: "[Weave CI] All done with my job 💪"
+        }
     }
 }
 @NonCPS
 def sendChangeLogs() {
-    def commitMessages = "" asd
-    def changeLogSets = currentBuild.changeSets
-    for (int i = 0; i < changeLogSets.size(); i++) {
-        def entries = changeLogSets[i].items
-        for (int j = 0; j < entries.length; j++) {
-            def entry = entries[j]
-            commitMessages = commitMessages + "${entry.author} ${entry.commitId}:\n${new Date(entry.timestamp).format('yyyy-MM-dd HH:mm')}: *${entry.msg}*\n" 
+    try {
+        def commitMessages = '' asd
+        def changeLogSets = currentBuild.changeSets
+        for (int i = 0; i < changeLogSets.size(); i++) {
+            def entries = changeLogSets[i].items
+            for (int j = 0; j < entries.length; j++) {
+                def entry = entries[j]
+                commitMessages = commitMessages + "${entry.author} ${entry.commitId}:\n${new Date(entry.timestamp).format('yyyy-MM-dd HH:mm')}: *${entry.msg}*\n"
+            }
         }
-    }
-    slackSend color: "good", message: """
-    [Weave CI] 
-    
-    Job: `${env.JOB_NAME}`. 
+        slackSend color: 'good', message: '''
+    [Weave CI]
+
+    Job: `${env.JOB_NAME}`.
     Build number: `#${env.BUILD_NUMBER}`
     Build details: <${env.BUILD_URL}/console|See in web console>
     Starting build with changes:\n${commitMessages}
-    
-    """
+    '''
+    }catch (err) {
+        slackSend color: 'danger', message: '''
+        [Weave CI]
+
+        Opps. Something's wrong with the deployment. 😢
+
+        ${err}
+        '''
+    }
 }
