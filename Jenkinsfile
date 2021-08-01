@@ -136,8 +136,7 @@ def sendChangeLogs() {
                 commitMessages = commitMessages + "${entry.author} ${entry.commitId}:\n${new Date(entry.timestamp).format('yyyy-MM-dd HH:mm')}: *${entry.msg}*\n"
             }
         }
-        slackSend color: 'good', message: "\n[Weave CI]\n\nJob: `${env.JOB_NAME}`\nBuild number: `#${env.BUILD_NUMBER}`\nBuild details: <${env.BUILD_URL}/console|See in web console>\nStarting build with changes:\n${commitMessages}
-    """
+        slackSend color: 'good', message: "\n[Weave CI]\n\nJob: `${env.JOB_NAME}`\nBuild number: `#${env.BUILD_NUMBER}`\nBuild details: <${env.BUILD_URL}/console|See in web console>\nStarting build with changes:\n${commitMessages}"
     }catch (err) {
         slackSend color: 'danger', message: "[Weave CI]\n\nOpps. Something's wrong with the deployment. 😢\n${err}
         """
