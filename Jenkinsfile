@@ -84,7 +84,13 @@ pipeline {
                                             }
                                         }
                                 } catch (err) {
-                                sh 'Could not connect to HOST'
+                                slackSend color: "danger", message: """
+                                [Weave CI] 
+                                
+                                Opps. Something's wrong with the deployment. 😢
+                                
+                                ${err}
+                                """
                                 }
                             }
                         }
@@ -95,7 +101,18 @@ pipeline {
     post {
        // only triggered when blue or green sign
        success {
-           slackSend color: "good", message: "[Weave CI] Code deployed and processes restarted 👍\nHelpful Links\n\n1. [Prisma Dev Studio] (http://46.101.87.98:5555/)\n2. [Project URI] (https://dev.iweave.com)\n3. [Portainer] (http://46.101.87.98:5000/)\n4. [Documentation] (https://documenter.getpostman.com/view/15958771/TzY69EUQ)"
+           slackSend color: "good", message: """
+           [Weave CI] 
+           
+           Code deployed and processes restarted 👍
+           
+           *Helpful Links*
+           
+           1. [Prisma Dev Studio] (http://46.101.87.98:5555/)
+           2. [Project URI] (https://dev.iweave.com)
+           3. [Portainer] (http://46.101.87.98:5000/)
+           4. [Documentation] (https://documenter.getpostman.com/view/15958771/TzY69EUQ)
+           """
        }
        // triggered when red sign
        failure {
@@ -109,7 +126,7 @@ pipeline {
 }
 @NonCPS
 def sendChangeLogs() {
-    def commitMessages = "" 
+    def commitMessages = "" asd
     def changeLogSets = currentBuild.changeSets
     for (int i = 0; i < changeLogSets.size(); i++) {
         def entries = changeLogSets[i].items
@@ -118,5 +135,13 @@ def sendChangeLogs() {
             commitMessages = commitMessages + "${entry.author} ${entry.commitId}:\n${new Date(entry.timestamp).format('yyyy-MM-dd HH:mm')}: *${entry.msg}*\n" 
         }
     }
-    slackSend color: "good", message: "[Weave CI] Job: `${env.JOB_NAME}`. Starting build with changes:\n${commitMessages}"
+    slackSend color: "good", message: """
+    [Weave CI] 
+    
+    Job: `${env.JOB_NAME}`. 
+    Build number: `#${env.BUILD_NUMBER}`
+    Build details: <${env.BUILD_URL}/console|See in web console>
+    Starting build with changes:\n${commitMessages}
+    
+    """
 }
