@@ -7,6 +7,7 @@ const kafka = new Kafka({
 })
 const admin = kafka.admin()
 admin.connect()
+console.log(`Kafka connecting on : `,`${process.env.IP}:29092`)
 async function main() {
     const Weave_Admin = await prisma.user.upsert({
         where: { id: "e6895e69-bb65-4f92-8989-6aae24defc86" },
