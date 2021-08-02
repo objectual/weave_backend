@@ -105,8 +105,9 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
                             raw: { existing: true, approved: false },
                             status: 401,
                         });
+                    }else{
+                        next();
                     }
-                    next();
                 })
         );
     }
