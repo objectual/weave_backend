@@ -45,7 +45,7 @@ export class Group {
                 name: req.body.name,
                 description: req.body.description,
                 owner: { connect: { id: req['user'].id } },
-                members: { connect: [...req.body.members.map(x => { return { id: x } }), { id: req['user'].id }] },
+                members: { connect: [...req.body.admins.map(x => { return { id: x } }),...req.body.members.map(x => { return { id: x } }), { id: req['user'].id }] },
                 admins: { connect: req.body.admins.map(x => { return { id: x } }) },
                 image: {
                     create: {
