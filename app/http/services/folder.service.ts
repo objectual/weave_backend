@@ -51,15 +51,15 @@ export class FolderService {
         })
     }
 
-    // findOne(where): Promise<IEvent> {
-    //     return new Promise((resolve, reject) => {
-    //         this.prisma.event
-    //             .findFirst({ where, select })
-    //             .then(event => resolve(event))
-    //             .catch(error => reject(error))
-    //             .finally(() => this.prisma.$disconnect())
-    //     })
-    // }
+    findOne(where): Promise<IFolder> {
+        return new Promise((resolve, reject) => {
+            this.prisma.folder
+                .findFirst({ where })
+                .then(event => resolve(event))
+                .catch(error => reject(error))
+                .finally(() => this.prisma.$disconnect())
+        })
+    }
 
     // findWithLimit(where, limit = null, page = null): Promise<IEventsResolver> {
     //     return new Promise((resolve, reject) => {

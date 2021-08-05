@@ -7,20 +7,10 @@ import { Request, Response } from "express";
 export class Folders {
     async getFolders(req: Request, res: Response) {
         try {
-            // let limit = _.toInteger(req.query.limit);
-            // let page = _.toInteger(req.query.page);
             const folderService = new FolderService();
-            // if (req.query.id != null && req.query.id != undefined && req.query.id != "") {
-            //     let event  = await eventService.findOne({ id: req.query.id })
-            //     Sender.send(res, { success: true, data: event, status: 200 })
-            // } 
-            // else {
                 let orQuery = { userId: req['user'].id }
-                
-                // let { events, count } = await eventService.findWithLimit({ OR: orQuery }, limit, page)
                 let event = await folderService.find(orQuery)
                 Sender.send(res, { success: true, data: event, status: 200 })
-            // }
         } catch (e) {
             Sender.errorSend(res, { success: false, msg: e.message, status: 500 })
         }
@@ -33,8 +23,6 @@ export class Folders {
                 owner: { connect: { id: req['user'].id } },
             }
             const folderService = new FolderService();
-            console.log(body);
-
             let event = await folderService.create(body);
             Sender.send(res, { success: true, data: event, status: 201, msg: "Folder created" })
         } catch (e) {
