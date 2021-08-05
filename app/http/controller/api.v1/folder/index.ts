@@ -11,7 +11,7 @@ class EventRoutes {
         router.post('/', FolderValidationMiddleware.validateFolderCreate(),new Folders().createFolder)
 
 
-        // router.put('/:id', EventValidationMiddleware.validateEventUpdate(), new Events().updateEvent)
+        router.patch('/:id', new Folders().updateFolder)
 
         // router.delete('/:id', new Events().deleteEvent)
 

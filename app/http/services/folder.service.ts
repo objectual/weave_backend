@@ -1,6 +1,6 @@
 "use strict";
 import { PrismaClient } from '@prisma/client';
-import { IFolder, IFolderCreate } from '../models/folder.model';
+import { IFolder, IFolderCreate,IFolderUpdate } from '../models/folder.model';
 let select = {
     id: true,
     name: true,
@@ -31,15 +31,15 @@ export class FolderService {
         })
     }
 
-    // update(where, event: IEventUpdate): Promise<IEvent> {
-    //     return new Promise((resolve, reject) => {
-    //         this.prisma.event
-    //             .update({ where, data: event, select })
-    //             .then(event => resolve(event))
-    //             .catch(error => reject(error))
-    //             .finally(() => this.prisma.$disconnect())
-    //     })
-    // }
+    update(where, event: IFolderUpdate): Promise<IFolder> {
+        return new Promise((resolve, reject) => {
+            this.prisma.folder
+                .update({ where, data: event, select })
+                .then(event => resolve(event))
+                .catch(error => reject(error))
+                .finally(() => this.prisma.$disconnect())
+        })
+    }
 
     find(where): Promise<IFolder[]> {  
         return new Promise((resolve, reject) => {

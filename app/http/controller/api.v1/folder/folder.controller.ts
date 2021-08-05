@@ -1,8 +1,7 @@
 import { Sender } from "../../../services/sender.service";
 import * as _ from "lodash"
 import { FolderService } from "../../../services/folder.service";
-import { IFolderCreate } from "../../../models/folder.model";
-import { ILocation } from "../../../models/location.model";
+import { IFolderCreate,IFolderUpdate } from "../../../models/folder.model";
 import { Request, Response } from "express";
 export class Folders {
     async getFolders(req: Request, res: Response) {
@@ -30,33 +29,34 @@ export class Folders {
         }
     }
 
-    // async updateEvent(req: Request, res: Response) {
-    //     try {
-    //         let location: ILocation = {
-    //             address: req.body.address,
-    //             lat: req.body.lat,
-    //             long: req.body.long,
-    //         }
-    //         let body: IEventUpdate = {
-    //             title: req.body.title,
-    //             description: req.body.description,
-    //             from: new Date(req.body.from),
-    //             to: new Date(req.body.to),
-    //             location: { connectOrCreate: { create: location, where: { lat_long: { lat: location.lat, long: location.long } } } },
-    //             members: {},
-    //         }
-    //         if (req.body.members != null && req.body.members.connect != null && req.body.members.connect.id.length > 0) {
-    //             body.members['connect'] = req.body.members.connect.id.map(x => { return { id: x } })
-    //         } else if (req.body.members != null && req.body.members.disconnect != null && req.body.members.disconnect.id.length > 0) {
-    //             body.members['disconnect'] = req.body.members.disconnect.id.map(x => { return { id: x } })
-    //         }
-    //         const eventService = new EventService();
-    //         let event = await eventService.update({ id: req.params.id }, body);
-    //         Sender.send(res, { success: true, data: event, status: 201, msg: "Event updated" })
-    //     } catch (e) {
-    //         Sender.errorSend(res, { success: false, msg: e.message, status: 500 })
-    //     }
-    // }
+    async updateFolder(req: Request, res: Response) {
+        try {
+        
+            let body: IFolderUpdate = {
+                group: {},
+                user:{}
+            }
+            if(req.body.group){
+            if (req.body.group != null && req.body.group.connect != null && req.body.group.connect.id.length > 0) {
+                body.group['connect'] = req.body.group.connect.id.map(x => { return { id: x } })
+            } else if (req.body.group != null && req.body.group.disconnect != null && req.body.group.disconnect.id.length > 0) {
+                body.group['disconnect'] = req.body.group.disconnect.id.map(x => { return { id: x } })
+            }
+        }   
+        else if(req.body.user){
+            if (req.body.user != null && req.body.user.connect != null && req.body.user.connect.id.length > 0) {
+                body.user['connect'] = req.body.user.connect.id.map(x => { return { id: x } })
+            } else if (req.body.user != null && req.body.user.disconnect != null && req.body.user.disconnect.id.length > 0) {
+                body.user['disconnect'] = req.body.user.disconnect.id.map(x => { return { id: x } })
+            }
+        }            
+            const folderService = new FolderService();
+            let event = await folderService.update({ id: req.params.id }, body);
+            Sender.send(res, { success: true, data: event, status: 201, msg: "Folder updated" })
+        } catch (e) {
+            Sender.errorSend(res, { success: false, msg: e.message, status: 500 })
+        }
+    }
 
     // async deleteEvent(req: Request, res: Response) {
     //     try {

@@ -1,6 +1,6 @@
 "use strict";
  
-// import { ILocation } from "./location.model";
+import { IRoom } from "./room.model";
 import { IUser,IUserProfile } from "./user.model";
 // import moment from 'moment';
 // export interface IEvent {
@@ -50,4 +50,8 @@ export interface IFolder{
 export interface IFolderCreate {
     name: string;
     owner: { connect: { id: IUser['id'] } };
+}
+export interface IFolderUpdate {
+    group?: { connect?: { id: IRoom['id'] }[], disconnect?: { id: IRoom['id'] }[] };    
+    user?: { connect?: { id: IUser['id'] }[], disconnect?: { id: IUser['id'] }[] };    
 }
