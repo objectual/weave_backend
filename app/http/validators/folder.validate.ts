@@ -99,6 +99,15 @@ export const FolderValidationMiddleware = new class ValidationMiddleware extends
                             return;
                         })
                 })
+                .use(async (req:Request, res:Response, next) => {
+                    const folderService = new FolderService();
+                    let event = await folderService.findOne({ id: req.params.id, userId: req['user'].id })
+                    if (event == null) {
+                        Sender.errorSend(res, { success: false, status: 409, msg: "Only Folder owner can update folder" })
+                    } else {
+                        next();
+                    }
+                })
          )
     }
 
