@@ -58,18 +58,13 @@ export class Folders {
         }
     }
 
-    // async deleteEvent(req: Request, res: Response) {
-    //     try {
-    //         const eventService = new EventService();
-    //         let event = await eventService.findOne({ id: req.params.id, userId: req['user'].id })
-    //         if (event == null) {
-    //             Sender.errorSend(res, { success: false, status: 409, msg: "Only event owner can remove event" })
-    //             return;
-    //         }
-    //         let unblocked = await eventService.delete({ id: req.params.id, userId: req['user'].id })
-    //         Sender.send(res, { success: true, data: unblocked, msg: "Event removed", status: 200 })
-    //     } catch (error) {
-    //         Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
-    //     }
-    // }
+    async deleteFolder(req: Request, res: Response) {
+        try {
+            const folderService = new FolderService();
+            let unblocked = await folderService.delete({ id: req.params.id, userId: req['user'].id })
+            Sender.send(res, { success: true, data: unblocked, msg: "folder removed", status: 200 })
+        } catch (error) {
+            Sender.errorSend(res, { success: false, msg: error.message, status: 500 });
+        }
+    }
 }

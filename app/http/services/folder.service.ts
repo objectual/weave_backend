@@ -74,13 +74,13 @@ export class FolderService {
     //     });
     // }
 
-    // delete(where): Promise<void | string> {
-    //     return new Promise((resolve, reject) => {
-    //         this.prisma.event
-    //             .deleteMany({ where })
-    //             .then(() => resolve())
-    //             .catch(error => reject(error))
-    //             .finally(() => this.prisma.$disconnect())
-    //     })
-    // }
+    delete(where): Promise<void | string> {
+        return new Promise((resolve, reject) => {
+            this.prisma.folder
+                .deleteMany({ where })
+                .then(() => resolve())
+                .catch(error => reject(error))
+                .finally(() => this.prisma.$disconnect())
+        })
+    }
 }

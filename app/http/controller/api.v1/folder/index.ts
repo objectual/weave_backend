@@ -13,7 +13,7 @@ class EventRoutes {
 
         router.patch('/:id', new Folders().updateFolder)
 
-        // router.delete('/:id', new Events().deleteEvent)
+        router.delete('/:id', new Folders().deleteFolder)
 
         return router;
     }
