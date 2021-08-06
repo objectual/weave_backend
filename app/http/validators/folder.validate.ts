@@ -1,26 +1,12 @@
 "use strict";
 import Joi from "joi";
 import * as _ from "lodash";
-import moment from 'moment';
 import compose from "composable-middleware"
-import { IFolder, IFolderCreate } from "../models/folder.model";
+import { IFolder, IFolderCreate,IFolderUpdate } from "../models/folder.model";
 import { Sender } from "../services/sender.service";
 import { FolderService } from "../services/folder.service";
-import { PrismaClient } from "@prisma/client";
-import { IUser } from "../models/user.model";
 import { Request, Response } from "express"
 
-// interface EventCreateData extends IEventCreate {
-//     "address": string,
-//     "lat": number,
-//     "long": number
-// }
-
-// interface EventUpdateData extends IEventUpdate {
-//     "address": string,
-//     "lat": number,
-//     "long": number
-// }
 class Validator {
     constructor() { }
     //************************ VALIDATE FOLDER CREATE DATA ***********************//
@@ -31,23 +17,20 @@ class Validator {
         return Joi.validate(data, schema);
     }
 
-    //************************ VALIDATE EVENT UPDATE DATA ***********************//
-//     protected validateUpdateEvent(data: EventUpdateData) {
-//         const schema = Joi.object().keys({
-//             title: Joi.string(),
-//             description: Joi.string(),
-//             from: Joi.string().required(),
-//             to: Joi.string().required(),
-//             address: Joi.string().required(),
-//             lat: Joi.number().required(),
-//             long: Joi.number().required(),
-//             members: Joi.object().keys({
-//                 connect: Joi.object().keys({ id: Joi.array().items(Joi.string()) }),
-//                 disconnect: Joi.object().keys({ id: Joi.array().items(Joi.string()) }),
-//             })
-//         });
-//         return Joi.validate(data, schema);
-//     }
+    //************************ VALIDATE FOLDER UPDATE DATA ***********************//
+    protected validateUpdateFolder(data: IFolderUpdate) {
+        const schema = Joi.object().keys({
+            user: Joi.object().keys({
+                connect: Joi.object().keys({ id: Joi.array().items(Joi.string()) }),
+                disconnect: Joi.object().keys({ id: Joi.array().items(Joi.string()) }),
+            }),
+            group: Joi.object().keys({
+                connect: Joi.object().keys({ id: Joi.array().items(Joi.string()) }),
+                disconnect: Joi.object().keys({ id: Joi.array().items(Joi.string()) }),
+            })
+        });
+        return Joi.validate(data, schema);
+    }
 }
 
 // class ValidateEvent {
@@ -139,34 +122,34 @@ export const FolderValidationMiddleware = new class ValidationMiddleware extends
         )
     }
 
-    // validateEventUpdate() {
-    //     return (
-    //         compose()
-    //             .use((req:Request, res:Response, next) => {
-    //                 super.validateUpdateEvent(req.body)
-    //                     .then(data => {
-    //                         next();
-    //                     }).catch(error => {
-    //                         var errors = {
-    //                             success: false,
-    //                             msg: error.details[0].message,
-    //                             data: error.name,
-    //                             status: 400
-    //                         };
-    //                         Sender.errorSend(res, errors);
-    //                         return;
-    //                     })
-    //             })
-    //             .use(async (req:Request, res:Response, next) => {
-    //                 const eventService = new EventService()
-    //                 let event = await eventService.findOne({ id: req.params.id, userId: req['user'].id })
-    //                 if (event == null) {
-    //                     Sender.errorSend(res, { success: false, status: 409, msg: "Only event owner can update event" })
-    //                 } else {
-    //                     req['event'] = event
-    //                     next();
-    //                 }
-    //             })
+     validateFolderUpdate() {
+        return (
+            compose()
+                .use((req:Request, res:Response, next) => {
+                    super.validateUpdateFolder(req.body)
+                        .then(data => {
+                            next();                            
+                        }).catch(error => {   
+                            var errors = {
+                                success: false,
+                                msg: error.details[0].message,
+                                data: error.name,
+                                status: 400
+                            };
+                            Sender.errorSend(res, errors);
+                            return;
+                        })
+                })
+                // .use(async (req:Request, res:Response, next) => {
+                //     const folderService = new FolderService()
+                //     let event = await folderService.findOne({ id: req.params.id, userId: req['user'].id })
+                //     if (event == null) {
+                //         Sender.errorSend(res, { success: false, status: 409, msg: "Only event owner can update event" })
+                //     } else {
+                //         req['event'] = event
+                //         next();
+                //     }
+                // })
     //             .use((req:Request, res:Response, next) => {
     //                 if (req.body.members != null && req.body.members.connect != null && req.body.members.connect.id.length > 0) {
     //                     req.body.members.connect.id = _.uniq(req.body.members.connect.id); // Only unique IDS 
@@ -208,8 +191,8 @@ export const FolderValidationMiddleware = new class ValidationMiddleware extends
     //                     next()
     //                 }
     //             })
-    //     )
-    // }
+         )
+    }
 
 }
 

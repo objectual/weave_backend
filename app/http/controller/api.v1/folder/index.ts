@@ -5,13 +5,10 @@ import { Folders } from './folder.controller'
 class EventRoutes {
     get routes() {
         router.get('/', new Folders().getFolders)
-
-        // router.post('/', EventValidationMiddleware.validateFolderCreate(), new Folders().createFolder)
-        
+ 
         router.post('/', FolderValidationMiddleware.validateFolderCreate(),new Folders().createFolder)
 
-
-        router.patch('/:id', new Folders().updateFolder)
+        router.patch('/:id',FolderValidationMiddleware.validateFolderUpdate(),new Folders().updateFolder)
 
         router.delete('/:id', new Folders().deleteFolder)
 
