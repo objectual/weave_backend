@@ -20,8 +20,6 @@ export class FolderService {
         // this.prisma.event.update({where: {id: "6ffcbdce-d4cc-4371-95ac-543efbccd090"}, data: {members: {disconnect: [{id: ""}]}}})
     }
     create(folder: IFolderCreate): Promise<IFolder> {
-        console.log(folder);
-        
         return new Promise((resolve, reject) => {
             this.prisma.folder
                 .create({ data: folder })

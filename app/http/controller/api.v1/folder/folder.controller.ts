@@ -20,7 +20,19 @@ export class Folders {
             let body:IFolderCreate  = {
                 name: req.body.name,
                 owner: { connect: { id: req['user'].id } },
+                group: {},
+                user:{}
             }
+            if(req.body.group){
+                if (req.body.group != null && req.body.group.connect != null && req.body.group.connect.id.length > 0) {
+                    body.group['connect'] = req.body.group.connect.id.map(x => { return { id: x } })
+                }
+            }   
+            if(req.body.user){
+                if (req.body.user != null && req.body.user.connect != null && req.body.user.connect.id.length > 0) {
+                    body.user['connect'] = req.body.user.connect.id.map(x => { return { id: x } })
+                }
+            }     
             const folderService = new FolderService();
             let event = await folderService.create(body);
             Sender.send(res, { success: true, data: event, status: 201, msg: "Folder created" })
@@ -43,7 +55,7 @@ export class Folders {
                 body.group['disconnect'] = req.body.group.disconnect.id.map(x => { return { id: x } })
             }
         }   
-        else if(req.body.user){
+        if(req.body.user){
             if (req.body.user != null && req.body.user.connect != null && req.body.user.connect.id.length > 0) {
                 body.user['connect'] = req.body.user.connect.id.map(x => { return { id: x } })
             } else if (req.body.user != null && req.body.user.disconnect != null && req.body.user.disconnect.id.length > 0) {
