@@ -4,7 +4,7 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl"]
 }
 
@@ -27,6 +27,8 @@ model User {
   roomsOwned      Room[]        @relation("RoomsOwned") // Containing my ID with rooms
   roomsAdmin      Room[]        @relation("RoomsAdmin")
   rooms           Room[]        @relation("RoomsMember")
+  folder          Folder[]      @relation("FolderOwner")
+  folderConnected Folder[]      @relation("FolderConnect")
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -151,4 +153,28 @@ model Room {
   members     User[]   @relation("RoomsMember")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  Folder      Folder?  @relation(fields: [folderId], references: [id])
+  folderId    String?
+}
+
+// model Folder {
+//   id        String   @id @default(uuid())
+//   name      String
+//   owner     User     @relation("FolderOwner", fields: [userId], references: [id])
+//   userId    String
+//   group     Room[]
+//   user      User[]   @relation("FolderConnect")
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+model Folder {
+  id        String   @id @default(uuid())
+  name      String
+  owner     User     @relation("FolderOwner", fields: [userId], references: [id])
+  userId    String
+  group     Room[]
+  user      User[]   @relation("FolderConnect")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
