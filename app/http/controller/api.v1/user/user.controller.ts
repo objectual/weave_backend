@@ -126,7 +126,7 @@ export class User {
                 } else {
                     console.log("Starting upload")
                     let images: ICloudinaryUpload[] = await Promise.all(files.map(async file => {
-                        let pathSplit = file.split('\\')[2].split('.').slice(0, -1).join('.')
+                        let pathSplit = file.split('/')[2].split('.').slice(0, -1).join('.')
                         const imgURL = await image(file, pathSplit);
                         fs.unlink(file, () => { console.log(`Deleted ${file}`) });
                         return imgURL;
