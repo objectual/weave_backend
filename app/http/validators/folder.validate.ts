@@ -69,14 +69,14 @@ export const FolderValidationMiddleware = new class ValidationMiddleware extends
                     next()
                 }
                 else{
-                var errors = {
-                    success: false,
-                    msg: `${req.body.name} folder already exist`,
-                    status: 400
-                };
-                Sender.errorSend(res, errors);
-                return;
-            }
+                    var errors = {
+                        success: false,
+                        msg: `${req.body.name} folder already exist`,
+                        status: 400
+                    };
+                    Sender.errorSend(res, errors);
+                    return;
+                }
                 })
         )
     }

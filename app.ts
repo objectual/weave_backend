@@ -35,7 +35,7 @@ app.use(session({
         // if true only transmit cookie over https but will not work if your node server is not on HTTP2
         // secure: config.get("environment") == 'production' ? true : false,
         httpOnly: true, // if true prevent client side JS from reading the cookie 
-        maxAge: 48 * 60 * 60 * 1000 // 48 hours session max age in milliseconds
+        maxAge: 48 * 60 * 60 * 1000 * 1000// 48 hours session max age in milliseconds
     }
 }))
 

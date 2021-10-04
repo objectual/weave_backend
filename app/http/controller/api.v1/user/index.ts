@@ -12,7 +12,7 @@ class UserRoutes {
     get routes() {
         router.get('/', AuthMiddleware.isApproved(), ConnectionValidationMiddleware.blockedUsersList(), CacheMiddleware.userSearch(), new User().get)
 
-        router.put('/', UserValidationMiddleware.validateUserUpdate(), new User().update)
+        router.post('/', UserValidationMiddleware.validateUserUpdate(), new User().update)
 
         router.post('/uploader', UserValidationMiddleware.validateUserImageCount(), Uploader.fields([{ name: "images" }]), new User().uploader)
 

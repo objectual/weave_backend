@@ -17,6 +17,7 @@ export class Folders {
 
     async createFolder(req: Request, res: Response) {
         try {
+
             let body:IFolderCreate  = {
                 name: req.body.name,
                 owner: { connect: { id: req['user'].id } },

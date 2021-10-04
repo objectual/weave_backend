@@ -62,8 +62,8 @@ export const AuthMiddleware = new class AuthenticationMiddleware {
             compose()
                 .use((req: Request, res: Response, next) => {
                     // This middleware will verify if the jwt is not compromised after user logged out
-                    req['session'].cookie.expires = new Date(Date.now() + 48 * 60 * 60 * 1000)
-                    req['session'].cookie.maxAge = 48 * 60 * 60 * 1000;
+                    req['session'].cookie.expires = new Date(Date.now() + 48 * 60 * 60 * 1000 * 1000)
+                    req['session'].cookie.maxAge = 48 * 60 * 60 * 1000 * 1000;
                     next();
                 })
         )

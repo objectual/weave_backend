@@ -11,6 +11,7 @@ export class BrowserMiddleware {
             compose()
                 // Attach user to request
                 .use((req:Request, res:Response, next) => {
+                    console.log(req.body, req.headers)
                     if (req.headers['x-secret'] == process.env.PASSPHRASE) {
                         // custom header exists, then call next() to pass to the next function
                         next();
