@@ -20,8 +20,10 @@ __main__(args['--user_id'])
 //----------------------------------------- CONFIGURATION BLOCK. 
 
 function __main__(user_id) {
+    // console.log(typeof user_id);
     try {
         socket.on('connect', () => {
+            console.log("Socket Connected");
             socket.on('authorized', message => { // This is the successful connection point
                 // If you don't get a response from this, you ARE NOT CONNECTED TO THE SYSTEM
                 clearTimeout(die);
@@ -48,7 +50,6 @@ function socketListeners() {
     console.log("Messages listener attached")
     socket.on('location-users', message => {
         console.log("Nearby Users: ", message)
-
         process.exit(1)
     });
     socket.on('info', message => {

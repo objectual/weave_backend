@@ -19,10 +19,13 @@ export class LocationSockets {
         })
 
         this._socket.on('location-users', async (data, callback) => {
+            console.log("data","ssssssss");
             let { user_id } = data
             let keysUserLocations = await RedisService.searchLocationKeys(`*|location`)
             let userLocations = await this.getLocationData(keysUserLocations)
             let myLocation = _.filter(userLocations, function (x) { return x.id == user_id })[0]
+            console.log("Data",userLocations);
+            
             //THINGS TODO
             /*
                 1. Nearby find algorithm

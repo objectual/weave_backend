@@ -20,7 +20,7 @@ module.exports = function (server) {
     })
     const kafka = new Kafka({
         clientId: "messageservice",
-        brokers: [`${process.env.IP}:29092`]
+        brokers: [`192.168.100.84:29092`]
     })
     const pubClient = new RedisClient(
         {
@@ -39,6 +39,8 @@ module.exports = function (server) {
     }));
 
     io.on('connect', async (socket) => {
+        console.log("Connected to socket");
+        
         const response = new ResponseSockets(socket)
         if (socket['decoded_token'].hasOwnProperty("exp") == false || Math.floor(new Date().getTime() / 1000) > socket['decoded_token'].exp) {
             response.error(`Session Expired`, null)
