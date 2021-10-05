@@ -6,8 +6,15 @@ export interface IImages {
     cloudinaryId: string;
     path: string;
     type: string;
+    position?: string;
     roomId?: IRoom["id"];
     userId?: IUser["id"];
     createdAt?: Date;
     updatedAt?: Date;
+}
+
+enum Position {
+    left = "LEFT",
+    right = "RIGHT",
+    middle = "MIDDLE"
 }
