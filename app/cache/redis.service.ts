@@ -10,6 +10,7 @@ export const RedisService = new class RedisService {
         let origin = {
             port: process.env.REDIS_PORT, // replace with your port
             host: process.env.REDIS_HOST, // replace with your hostanme or IP address
+            password: process.env.REDIS_PASS, // replace with your password
         }
         // if (process.env.NODE_ENV == "production") { // ONLY USE IN PRODUCTION READY ENVIRONMENT
 

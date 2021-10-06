@@ -3,10 +3,6 @@ import { Kafka } from "kafkajs"
 
 import fs from "fs";
 const socketioJwt = require('socketio-jwt');
-
-import { createAdapter } from 'socket.io-redis';
-import { RedisClient } from "redis";
-
 const publicKEY = fs.readFileSync("config/cert/accessToken.pub", "utf8");
 import { LocationSockets } from "./sockets/location.socket";
 import { ResponseSockets } from "./sockets/response.socket";
@@ -22,15 +18,6 @@ module.exports = function (server) {
         clientId: "messageservice",
         brokers: [`${process.env.IP}:29092`]
     })
-    const pubClient = new RedisClient(
-        {
-            port: process.env.REDIS_PORT, // replace with your port
-            host: process.env.REDIS_HOST, // replace with your hostanme or IP address
-        }
-    );
-    const subClient = pubClient.duplicate();
-
-    io.adapter(createAdapter({ pubClient, subClient }));
     console.log("✔️ Socket Server Listening")
 
     io.use(socketioJwt.authorize({
