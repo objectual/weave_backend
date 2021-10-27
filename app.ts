@@ -23,7 +23,7 @@ import { BrowserMiddleware } from './app/http/middleware/browser';
 import ApiRoutes from "./routes/api.v1";
 
 var app = express();
-app.use(cors());
+app.use(cors({credentials: true, origin: '*'}));
 
 app.use(session({
     store: new RedisStore({ client: RedisService.connectCache() }),
