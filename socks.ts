@@ -30,13 +30,13 @@ module.exports = function (server) {
     );
     const subClient = pubClient.duplicate();
 
-    io.adapter(createAdapter({ pubClient, subClient }));
+    // io.adapter(createAdapter({ pubClient, subClient }));
     console.log("✔️ Socket Server Listening")
 
-    io.use(socketioJwt.authorize({
-        secret: publicKEY,
-        handshake: true
-    }));
+    // io.use(socketioJwt.authorize({
+    //     secret: publicKEY,
+    //     handshake: true
+    // }));
 
     io.on('connect', async (socket) => {
         console.log("Connected to socket");

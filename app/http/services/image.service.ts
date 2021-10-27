@@ -5,6 +5,7 @@ interface IImageCreate {
     cloudinaryId: string;
     path: string;
     type?: string;
+    position?: string;
     userId?: string;
     roomId?: string;
 }
@@ -12,6 +13,7 @@ const select = {
     id: true,
     cloudinaryId: true,
     path: true,
+    position: true,
     type: true,
     createdAt: true,
     updatedAt: true,

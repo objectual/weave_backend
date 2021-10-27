@@ -80,6 +80,7 @@ model Images {
   id           String     @id @default(uuid())
   cloudinaryId String
   path         String
+  position     Position?
   type         ImageTypes @default(USER)
   room         Room?      @relation(fields: [roomId], references: [id])
   roomId       String?
@@ -92,6 +93,12 @@ model Images {
 enum ImageTypes {
   USER
   CHAT
+}
+
+enum Position {
+  LEFT
+  RIGHT
+  MIDDLE
 }
 
 //*************** CONNECTIONS LEVEL ***************//

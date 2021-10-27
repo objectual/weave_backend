@@ -16,6 +16,8 @@ class UserRoutes {
 
         router.post('/uploader', UserValidationMiddleware.validateUserImageCount(), Uploader.fields([{ name: "images" }]), new User().uploader)
 
+        router.post('/upload/single',  Uploader.fields([{ name: "images" }]), new User().upload)
+
         router.delete('/images/remove', new User().imageRemove)
 
         router.get('/images/:id', new User().getImages)
