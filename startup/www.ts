@@ -1,4 +1,36 @@
-#!/usr/bin/env node
+// const express = require("express");
+// const app = express();
+// var cors = require('cors')
+// const http = require("http");
+// const server = http.createServer(app);
+
+
+// const io = require("socket.io")();
+// app.io = io
+// app.io.attach(server)
+
+// app.use(cors({
+//   origin:['http://localhost:8081','http://127.0.0.1:8081'],
+//   credentials:true
+// }));
+
+// app.use(function (req, res, next) {
+//   res.header('Access-Control-Allow-Origin', "http://localhost:8081");
+//   res.header('Access-Control-Allow-Headers', true);
+//   res.header('Access-Control-Allow-Credentials', true);
+//   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+//   next();
+// });
+
+// app.io.on("connection", async (socket) => {
+//   console.log("a user connected");
+// });
+
+// server.listen(3000, () => {
+//   console.log("listening on *:3000");
+// });
+
+// #!/usr/bin/env node
 console.info(`
 ██     ██ ███████  █████  ██    ██ ███████ 
 ██     ██ ██      ██   ██ ██    ██ ██      
@@ -38,11 +70,35 @@ app.use(function (err, req: Request, res: Response, next) {
     }
 });
 
+
 /**
  * Create HTTP server.
  */
 var server = http.createServer(app);
-require("../socks")(server) // Connecting all socks to app
+
+const io = require("socket.io")();
+var cors = require('cors')
+
+app.io = io
+app.io.attach(server)
+
+app.use(cors({
+    origin:['http://localhost:8081','http://127.0.0.1:8081'],
+    credentials:true
+}));
+
+app.use(function (req, res, next) {
+    res.header('Access-Control-Allow-Origin', "http://localhost:8081");
+    res.header('Access-Control-Allow-Headers', true);
+    res.header('Access-Control-Allow-Credentials', true);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    next();
+});
+
+require("../socks")(app.io) // Connecting all socks to app
+// app.io.on("connection", async (socket) => {
+//   console.log("a user connected");
+// });
 /**
  * Listen on provided port, on all network interfaces.
  */

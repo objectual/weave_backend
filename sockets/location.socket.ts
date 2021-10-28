@@ -12,13 +12,15 @@ export class LocationSockets {
 
     get routes() {
         this._socket.on("location-update", (data, callback) => {
+
             let { user_id, lat, long } = data
             RedisService.setData({ lat, long, range: this._socket['user'].profile.locationRange, locationVisibility: this._socket['user'].profile.locationVisibility }, `${user_id}|location`, 0)
             this.response.info(`Location updated`, { user: user_id, lat, long })
-            callback();
+            if(callback) callback();
         })
 
         this._socket.on('location-users', async (data, callback) => { 
+            
             let { user_id } = data
             let keysUserLocations = await RedisService.searchLocationKeys(`*|location`)
             let userLocations = await this.getLocationData(keysUserLocations)
@@ -40,7 +42,7 @@ export class LocationSockets {
                 }
             })
             this.response.locationUsers("Nearby Users", { user: this._socket['user'], users: users })
-            callback();
+            if(callback) callback();
         })
         return this._socket
     }
