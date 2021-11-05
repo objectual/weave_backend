@@ -44,6 +44,7 @@ module.exports = function (io) {
         const response = new ResponseSockets(socket)
         if (socket['decoded_token'].hasOwnProperty("exp") == false || Math.floor(new Date().getTime() / 1000) > socket['decoded_token'].exp) {
             response.error(`Session Expired`, null)
+            console.log("SESSION EXPIRED", "disconnected: ", socket['user'].profile.firstName, socket['user'].profile.lastName)
             socket.disconnect(true)
             return;
         } else {
