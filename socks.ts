@@ -24,8 +24,8 @@ module.exports = function (io) {
     })
     const pubClient = new RedisClient(
         {
-            port: process.env.REDIS_PORT, // replace with your port
             host: process.env.REDIS_HOST, // replace with your hostanme or IP address
+            password: process.env.REDIS_PASS, // replace with your hostanme or IP address
         }
     );
     const subClient = pubClient.duplicate();

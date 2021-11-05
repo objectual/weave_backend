@@ -5,10 +5,9 @@ const redisScan = require('node-redis-scan');
 let client: any;
 let scanner: any;
 export const RedisService = new class RedisService {
-    connectCache(): createClient {
+    connectCache() {
         // console.log("❗ Service Connecting to Redis...")
         let origin = {
-            port: process.env.REDIS_PORT, // replace with your port
             host: process.env.REDIS_HOST, // replace with your hostanme or IP address
             password: process.env.REDIS_PASS, // replace with your password
         }
