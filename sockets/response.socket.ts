@@ -4,7 +4,7 @@ interface ISocketEmit {
     text: string,
     message?: IMessage
     data?: {
-        user: Object | string,
+        user?: Object | string,
         users?: ISocketUserLocation[],
         blockedByMe?: string[],
         blockedByOthers?: string[],
@@ -51,7 +51,7 @@ export class ResponseSockets {
     }
 
     locationUsers(msg: ISocketEmit['text'], data: ISocketEmit['data']) {
-        return this.emit("location-users", { text: msg, data:{ users: data.users, user: data.user } });
+        return this.emit("location-users", { text: msg, data:{ users: data.users } });
     }
 
 }
