@@ -51,7 +51,7 @@ export class ResponseSockets {
     }
 
     locationUsers(msg: ISocketEmit['text'], data: ISocketEmit['data']) {
-        return this.emit("location-users", { text: msg, data });
+        return this.emit("location-users", { text: msg, data:{ users: data.users, user: data.user } });
     }
 
 }

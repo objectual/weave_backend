@@ -12,7 +12,7 @@ export class LocationSockets {
 
     get routes() {
         this._socket.on("location-update", (data, callback) => {
-
+            console.log(data)
             let { user_id, lat, long } = data
             RedisService.setData({ lat, long, range: this._socket['user'].profile.locationRange, locationVisibility: this._socket['user'].profile.locationVisibility }, `${user_id}|location`, 0)
             this.response.info(`Location updated`, { user: user_id, lat, long })
@@ -48,6 +48,7 @@ export class LocationSockets {
     }
 
     private async getNearbyUsers(data, _lat, _long): Promise<ISocketUserLocation[]> {
+        console.log(data)
         let distances = _.filter(data.map(({ lat, long, range, id, locationVisibility }) => {
             let distance = (lat1, lon1, lat2, lon2) => {
                 var radlat1 = (Math.PI * lat1) / 180;
